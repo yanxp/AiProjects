@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bindraw — 手势识别画图</title>
+    <meta name="description" content="基于 TensorFlow.js + MediaPipe Hands 的前置摄像头手势识别画图工具。指尖即画笔，直接在摄像头画面上作画。" />
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="no-camera">
+    <header class="app-header">
+        <h1 class="app-title">Bindraw</h1>
+        <p class="app-subtitle">画布直接作画 · 可选前置摄像头手势</p>
+    </header>
+
+    <nav class="toolbar" aria-label="画板工具栏">
+        <div class="tool-group">
+            <button type="button" id="tool-pen" class="tool-btn active" title="画笔" aria-pressed="true">✏️ 画笔</button>
+            <button type="button" id="tool-eraser" class="tool-btn" title="橡皮擦" aria-pressed="false">🧽 橡皮擦</button>
+        </div>
+
+        <div class="tool-group">
+            <label class="tool-label" for="color-picker">颜色</label>
+            <input type="color" id="color-picker" value="#2563eb" />
+        </div>
+
+        <div class="tool-group">
+            <label class="tool-label" for="size-slider">粗细 <span id="size-value">6</span>px</label>
+            <input type="range" id="size-slider" min="1" max="60" value="6" />
+        </div>
+
+        <div class="tool-group">
+            <button type="button" id="btn-undo" class="tool-btn" title="撤销">↶ 撤销</button>
+            <button type="button" id="btn-redo" class="tool-btn" title="重做">↷ 重做</button>
+        </div>
+
+        <div class="tool-group">
+            <button type="button" id="btn-clear" class="tool-btn danger" title="清空画布">🗑 清空</button>
+            <button type="button" id="btn-save" class="tool-btn primary" title="保存为 PNG">💾 保存图片</button>
+        </div>
+
+        <div class="tool-group">
+            <label class="tool-label" for="template-picker">素描模板</label>
+            <select id="template-picker" class="tool-select" title="选择动物线稿模板">
+                <option value="none">无模板</option>
+                <option value="cat">🐱 小猫</option>
+                <option value="rabbit">🐰 小兔</option>
+                <option value="fish">🐟 小鱼</option>
+                <option value="butterfly">🦋 蝴蝶</option>
+                <option value="dinosaur">🦕 恐龙</option>
+                <option value="turtle">🐢 乌龟</option>
+            </select>
+        </div>
+
+        <div class="tool-group">
+            <label class="tool-label toggle-label">
+                <input type="checkbox" id="gesture-toggle" />
+                <span>启用手势（需摄像头）</span>
+            </label>
+            <label class="tool-label toggle-label">
+                <input type="checkbox" id="camera-toggle" checked />
+                <span>显示摄像头</span>
+            </label>
+            <label class="tool-label toggle-label">
+                <input type="checkbox" id="skeleton-toggle" checked />
+                <span>显示骨架</span>
+            </label>
+        </div>
+    </nav>
+
+    <main class="workspace">
+        <section class="stage" aria-label="摄像头 + 画布">
+            <video id="camera-video" autoplay playsinline muted></video>
+            <canvas id="camera-overlay" aria-hidden="true"></canvas>
+            <canvas id="draw-canvas" aria-label="画布"></canvas>
+            <div class="cursor-indicator" id="cursor-indicator" aria-hidden="true"></div>
+
+            <div class="gesture-badge">
+                <span class="gesture-emoji" id="gesture-emoji">🖐</span>
+                <span class="gesture-name" id="gesture-name">等待手势</span>
+            </div>
+
+            <div class="status-bar">
+                <span id="camera-status" class="status">初始化中…</span>
+                <span id="draw-status" class="status subtle">准备就绪</span>
+            </div>
+
+            <div class="ready-banner" id="ready-banner" role="status" aria-live="polite" hidden>
+                <span class="ready-banner-emoji">✅</span>
+                <div class="ready-banner-text">
+                    <strong id="ready-banner-title">准备就绪</strong>
+                    <span id="ready-banner-sub">竖起食指即可开始作画</span>
+                </div>
+            </div>
+
+            <div class="loading-overlay hidden" id="loading-overlay" aria-live="polite">
+                <div class="loading-card">
+                    <div class="loading-spinner" aria-hidden="true"></div>
+                    <div class="loading-title" id="loading-title">正在加载手势识别模型…</div>
+                    <div class="loading-sub" id="loading-sub">首屏约需下载 2–5 MB 模型（2–10 秒，视网络而定）</div>
+                </div>
+            </div>
+
+            <aside class="legend" aria-label="手势说明">
+                <button type="button" id="legend-toggle" class="legend-toggle" aria-expanded="true">手势说明</button>
+                <div class="legend-body" id="legend-body">
+                    <ul>
+                        <li><span class="legend-emoji">☝️</span> 竖起食指 — 下笔作画</li>
+                        <li><span class="legend-emoji">🖐</span> 其它姿势 — 抬笔</li>
+                    </ul>
+                    <p class="legend-note">撤销 / 清空 / 保存请使用上方工具栏。</p>
+                </div>
+            </aside>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <small>TensorFlow.js + MediaPipe Hands · 建议在 HTTPS / localhost 下使用（摄像头 API 需要安全上下文）</small>
+    </footer>
+
+    <!--
+        TensorFlow.js core + hand-pose-detection.
+        额外预加载 @mediapipe/hands 资源包，允许使用更稳定的 mediapipe runtime。
+    -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection"></script>
+
+    <!-- 应用脚本 -->
+    <script src="js/camera.js"></script>
+    <script src="js/bindraw.js"></script>
+</body>
+</html>
