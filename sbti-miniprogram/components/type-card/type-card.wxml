@@ -1,0 +1,5 @@
+<view class="card">
+  <text class="card-emoji">{{type.emoji}}</text>
+  <text class="card-code">{{type.code}}</text>
+  <text class="card-name">{{type.name}}</text>
+</view>

@@ -1,0 +1,57 @@
+<view class="page">
+  <!-- Hero Section -->
+  <view class="hero">
+    <view class="badge">2026 互联网人格鉴定</view>
+    <view class="title">你是哪种</view>
+    <view class="title-gradient">互联网嘴替</view>
+    <view class="title">？</view>
+
+    <view class="subtitle">
+      <text class="highlight">互联网嘴替测试</text>
+      <text> — 测测你在网上到底是什么人格。</text>
+    </view>
+    <view class="desc">25种网络人格类型，每一种都精准到让你怀疑手机被监控了。</view>
+
+    <!-- Stats -->
+    <view class="stats">
+      <view class="stat-item">
+        <text class="stat-num">{{stats.questions}}</text>
+        <text class="stat-label">道题目</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-num">{{stats.models}}</text>
+        <text class="stat-label">大模型</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-num">{{stats.dimensions}}</text>
+        <text class="stat-label">个维度</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-num">{{stats.types}}</text>
+        <text class="stat-label">种人格</text>
+      </view>
+    </view>
+
+    <button class="btn-start" bindtap="startQuiz">开始测试 →</button>
+    <view class="tip">免费 · 无需注册 · 约3分钟</view>
+  </view>
+
+  <!-- Types Grid -->
+  <view class="section">
+    <view class="section-title">25种网络人格</view>
+    <view class="section-sub">点击任意卡片了解详情</view>
+    <view class="types-grid">
+      <view wx:for="{{types}}" wx:key="code" class="type-card" bindtap="viewType" data-code="{{item.code}}">
+        <text class="tc-emoji">{{item.emoji}}</text>
+        <text class="tc-code">{{item.code}}</text>
+        <text class="tc-name">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Footer -->
+  <view class="footer">
+    <text>互联网嘴替测试 · 纯娱乐，零科学 · 测完记得转发</text>
+    <text class="footer-sub">本站仅供娱乐，测试结果不构成任何社交建议。</text>
+  </view>
+</view>

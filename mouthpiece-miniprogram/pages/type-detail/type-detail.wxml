@@ -1,0 +1,43 @@
+<view class="page" wx:if="{{type}}">
+  <!-- Header -->
+  <view class="header-card">
+    <text class="emoji">{{type.emoji}}</text>
+    <text class="code">{{type.code}}</text>
+    <text class="name">{{type.name}} · {{type.nameEn}}</text>
+    <text class="tagline">"{{type.tagline}}"</text>
+    <view class="group-badge">
+      <text class="group-name">{{groupName}}</text>
+      <text class="group-desc">{{groupDesc}}</text>
+    </view>
+  </view>
+
+  <!-- Description -->
+  <view class="section">
+    <text class="section-title">人格描述</text>
+    <text class="desc">{{type.desc}}</text>
+  </view>
+
+  <!-- Traits -->
+  <view class="section">
+    <text class="section-title">核心特征</text>
+    <view class="traits">
+      <text wx:for="{{type.traits}}" wx:key="*this" class="trait-tag">{{item}}</text>
+    </view>
+  </view>
+
+  <!-- Pattern -->
+  <view class="section">
+    <text class="section-title">维度模式</text>
+    <view class="pattern-list">
+      <view wx:for="{{patternItems}}" wx:key="name" class="pattern-item">
+        <text class="pattern-name">{{item.name}}</text>
+        <text class="pattern-level {{item.cls}}">{{item.level}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- CTA -->
+  <view class="cta">
+    <button class="btn-quiz" bindtap="startQuiz">测测你是不是这个类型 →</button>
+  </view>
+</view>

@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "SBTI 沙雕大测试",
+  "usingComponents": {
+    "type-card": "/components/type-card/type-card"
+  }
+}

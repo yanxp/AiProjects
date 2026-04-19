@@ -1,0 +1,115 @@
+.page {
+  padding: 40rpx;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* Progress */
+.progress-bar {
+  width: 100%;
+  height: 8rpx;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6c5ce7, #fd79a8);
+  border-radius: 4rpx;
+  transition: width 0.3s ease;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16rpx;
+  margin-bottom: 40rpx;
+}
+
+.progress-text {
+  font-size: 28rpx;
+  color: #6c6c8a;
+  font-weight: 600;
+}
+
+/* Question */
+.question-area {
+  transition: transform 0.28s ease, opacity 0.28s ease;
+}
+
+.question-area.slide-out {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+.question-area.slide-in {
+  animation: slideIn 0.3s ease forwards;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.model-badge {
+  display: inline-block;
+  padding: 10rpx 28rpx;
+  background: rgba(108, 92, 231, 0.12);
+  border: 1rpx solid rgba(108, 92, 231, 0.25);
+  border-radius: 100rpx;
+  font-size: 26rpx;
+  color: #a29bfe;
+  margin-bottom: 32rpx;
+}
+
+.question-text {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 800;
+  line-height: 1.5;
+  margin-bottom: 56rpx;
+}
+
+/* Options */
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.option-btn {
+  display: flex;
+  align-items: center;
+  padding: 32rpx;
+  background: rgba(255,255,255,0.04);
+  border: 1rpx solid rgba(255,255,255,0.08);
+  border-radius: 20rpx;
+  transition: all 0.2s ease;
+}
+
+.option-btn.selected {
+  background: rgba(108, 92, 231, 0.15);
+  border-color: rgba(108, 92, 231, 0.5);
+}
+
+.opt-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56rpx;
+  height: 56rpx;
+  background: rgba(108, 92, 231, 0.15);
+  border-radius: 50%;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #a29bfe;
+  margin-right: 24rpx;
+  flex-shrink: 0;
+}
+
+.opt-text {
+  font-size: 30rpx;
+  line-height: 1.5;
+  color: #e0e0f0;
+}

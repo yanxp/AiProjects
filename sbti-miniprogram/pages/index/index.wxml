@@ -1,0 +1,70 @@
+<view class="page">
+  <!-- Hero Section -->
+  <view class="hero">
+    <view class="badge">2026 最火人格测试</view>
+    <view class="title-wrap">
+      <text class="title-line">你的</text>
+      <text class="title-line gradient-text">SBTI</text>
+      <text class="title-line">人格是？</text>
+    </view>
+    <view class="subtitle">
+      <text class="accent">SBTI</text>
+      <text>（Silly Big Personality Test / 沙雕大测试）</text>
+      <text>\n不给你体面的标签，只给你最真实的互联网人格。</text>
+      <text>\n27种人格类型，每一种都精准到让你笑着哭出来。</text>
+    </view>
+
+    <!-- Stats -->
+    <view class="stats-row">
+      <view class="stat-item">
+        <text class="stat-num">30</text>
+        <text class="stat-label">道题目</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-num">5</text>
+        <text class="stat-label">大模型</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-num">15</text>
+        <text class="stat-label">个维度</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-num">27</text>
+        <text class="stat-label">种人格</text>
+      </view>
+    </view>
+
+    <!-- Start Button -->
+    <button class="btn-start" bindtap="onStartQuiz">开始测试 →</button>
+    <text class="note">免费 · 无需注册 · 约3分钟</text>
+  </view>
+
+  <!-- Scrolling Tags -->
+  <scroll-view class="type-scroll" scroll-x enhanced show-scrollbar="{{false}}" scroll-with-animation>
+    <view class="type-scroll-track">
+      <text class="scroll-tag" wx:for="{{scrollTags}}" wx:key="index">{{item}}</text>
+    </view>
+  </scroll-view>
+
+  <!-- Types Grid -->
+  <view class="types-section">
+    <text class="section-title">27种沙雕人格</text>
+    <text class="section-sub">点击任意卡片了解详情</text>
+    <view class="types-grid">
+      <type-card
+        wx:for="{{types}}"
+        wx:key="code"
+        type="{{item}}"
+        bindtap="onTypeCardTap"
+        data-code="{{item.code}}"
+      />
+    </view>
+  </view>
+
+  <!-- Footer -->
+  <view class="footer">
+    <text>SBTI 沙雕大测试 · 纯娱乐，零科学</text>
+    <text>灵感来自B站UP主蛆肉儿串儿</text>
+    <text>本小程序仅供娱乐，测试结果不构成任何心理学建议。</text>
+  </view>
+</view>

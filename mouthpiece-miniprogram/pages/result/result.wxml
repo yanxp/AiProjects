@@ -1,0 +1,55 @@
+<view class="page" wx:if="{{type}}">
+  <!-- Result Card -->
+  <view class="result-card">
+    <text class="result-emoji">{{type.emoji}}</text>
+    <text class="result-code">{{type.code}}</text>
+    <text class="result-name">{{type.name}} · {{type.nameEn}}</text>
+    <text class="result-tagline">"{{type.tagline}}"</text>
+    <view class="result-group">
+      <text class="group-name">{{groupName}}</text>
+      <text class="group-desc">{{groupDesc}}</text>
+    </view>
+  </view>
+
+  <!-- Description -->
+  <view class="section">
+    <text class="section-title">人格分析</text>
+    <text class="result-desc">{{type.desc}}</text>
+  </view>
+
+  <!-- Traits -->
+  <view class="section">
+    <text class="section-title">核心特征</text>
+    <view class="traits">
+      <text wx:for="{{type.traits}}" wx:key="*this" class="trait-tag">{{item}}</text>
+    </view>
+  </view>
+
+  <!-- Dimensions -->
+  <view class="section">
+    <text class="section-title">15维度分析</text>
+    <view class="dim-grid">
+      <view wx:for="{{dimensions}}" wx:key="key" class="dim-item">
+        <text class="dim-label">{{item.name}}</text>
+        <view class="dim-bar">
+          <view class="dim-fill" style="width: {{item.pct}}%"></view>
+        </view>
+        <text class="dim-level {{item.cls}}">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Actions -->
+  <view class="actions">
+    <button class="btn-share" bindtap="shareResult">保存结果图片</button>
+    <button class="btn-share-wx" open-type="share">分享给朋友</button>
+    <view class="bottom-links">
+      <text class="link" bindtap="retakeQuiz">重新测试</text>
+      <text class="link-sep">|</text>
+      <text class="link" bindtap="goHome">返回首页</text>
+    </view>
+  </view>
+
+  <!-- Hidden canvas for share card -->
+  <canvas type="2d" id="shareCanvas" style="width:600px;height:800px;position:fixed;left:-9999px;top:0;"></canvas>
+</view>

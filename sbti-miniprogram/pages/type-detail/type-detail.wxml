@@ -1,0 +1,20 @@
+<view class="page" wx:if="{{type}}">
+  <view class="detail-card">
+    <text class="dt-emoji">{{type.emoji}}</text>
+    <text class="dt-code">{{type.code}}</text>
+    <text class="dt-name">{{type.name}} · {{type.nameEn}}</text>
+    <text class="dt-tagline">"{{type.tagline}}"</text>
+    <view class="divider"></view>
+    <text class="dt-desc">{{type.desc}}</text>
+
+    <view class="traits">
+      <text class="trait-tag" wx:for="{{type.traits}}" wx:key="index">{{item}}</text>
+    </view>
+
+    <view class="group-info">
+      <text class="group-label">所属分组：{{groupName}}</text>
+    </view>
+  </view>
+
+  <button class="btn-start" bindtap="onStartQuiz">去测测我是不是这个 →</button>
+</view>
