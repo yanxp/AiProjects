@@ -1,0 +1,512 @@
+:root {
+    --bg: #0b0d12;
+    --panel-bg: rgba(255, 255, 255, 0.92);
+    --border: #e2e4ea;
+    --text: #1f2430;
+    --muted: #6b7280;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --danger: #dc2626;
+    --danger-hover: #b91c1c;
+    --shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+    --radius: 10px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+.app-header {
+    text-align: center;
+    padding: 10px 16px 4px;
+    color: #f3f4f6;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.app-title {
+    margin: 0;
+    font-size: 1.25rem;
+    letter-spacing: 0.5px;
+}
+
+.app-subtitle {
+    margin: 2px 0 0;
+    color: #9ca3af;
+    font-size: 0.85rem;
+}
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 14px;
+    background: var(--panel-bg);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(6px);
+    z-index: 10;
+}
+
+.tool-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tool-label {
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.tool-btn {
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    user-select: none;
+}
+
+.tool-btn:hover {
+    background: #f0f2f7;
+}
+
+.tool-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+.tool-btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+.tool-btn.primary:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+}
+
+.tool-btn.danger {
+    border-color: var(--danger);
+    color: var(--danger);
+    background: #fff;
+}
+
+.tool-btn.danger:hover {
+    background: var(--danger);
+    color: #fff;
+}
+
+input[type="color"] {
+    width: 38px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+}
+
+input[type="range"] {
+    width: 140px;
+}
+
+.tool-select {
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--text);
+    padding: 6px 10px;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    cursor: pointer;
+    min-width: 120px;
+}
+
+.tool-select:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.toggle-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+    color: var(--text);
+    font-size: 0.9rem;
+}
+
+/* ---------- 主工作区 ---------- */
+
+.workspace {
+    flex: 1 1 auto;
+    position: relative;
+    overflow: hidden;
+    background: #000;
+}
+
+/* 未开启摄像头时：画布独立显示，背景改为亚麻纸感的浅灰 */
+body.no-camera .workspace {
+    background: #f5f7fb;
+    background-image:
+        linear-gradient(rgba(148, 163, 184, 0.15) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.15) 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+
+body.no-camera .stage video,
+body.no-camera .stage #camera-overlay,
+body.no-camera .gesture-badge,
+body.no-camera #camera-status,
+body.no-camera .legend {
+    display: none !important;
+}
+
+.stage {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+.stage video,
+.stage #camera-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* 前置摄像头镜像，更符合用户直觉 */
+    transform: scaleX(-1);
+    z-index: 0;
+}
+
+.stage #camera-overlay {
+    z-index: 1;
+    pointer-events: none;
+}
+
+.stage #draw-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+    touch-action: none;
+    background: transparent;
+    z-index: 2;
+}
+
+/* ---------- 状态 / 手势徽章 / 图例 ---------- */
+
+.gesture-badge {
+    position: absolute;
+    left: 14px;
+    top: 14px;
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(17, 24, 39, 0.72);
+    color: #fff;
+    font-size: 0.95rem;
+    backdrop-filter: blur(4px);
+    pointer-events: none;
+}
+
+.gesture-emoji {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.gesture-name {
+    font-weight: 600;
+}
+
+.status-bar {
+    position: absolute;
+    left: 14px;
+    bottom: 14px;
+    z-index: 5;
+    display: flex;
+    gap: 10px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: rgba(17, 24, 39, 0.7);
+    color: #fff;
+    font-size: 0.82rem;
+    backdrop-filter: blur(4px);
+    pointer-events: none;
+}
+
+.status.subtle {
+    color: #cbd5e1;
+}
+
+.legend {
+    position: absolute;
+    right: 14px;
+    top: 14px;
+    z-index: 5;
+    background: rgba(17, 24, 39, 0.72);
+    color: #fff;
+    border-radius: 12px;
+    backdrop-filter: blur(4px);
+    padding: 8px 12px;
+    max-width: 260px;
+    font-size: 0.85rem;
+}
+
+.legend-toggle {
+    border: 0;
+    background: transparent;
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0 0 6px;
+    letter-spacing: 0.3px;
+    width: 100%;
+    text-align: left;
+}
+
+.legend-body ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+}
+
+.legend-body li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.35;
+}
+
+.legend-note {
+    margin: 8px 0 0;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    color: #cbd5e1;
+    font-size: 0.78rem;
+    line-height: 1.35;
+}
+
+.legend-emoji {
+    font-size: 1.05rem;
+    width: 1.4em;
+    text-align: center;
+}
+
+/* ---------- 加载遮罩 + 就绪横幅 ---------- */
+
+.loading-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(6, 8, 14, 0.72);
+    color: #fff;
+    backdrop-filter: blur(6px);
+    transition: opacity 0.4s ease;
+}
+
+.loading-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.loading-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 28px 40px;
+    border-radius: 14px;
+    background: rgba(17, 24, 39, 0.85);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    text-align: center;
+    max-width: 90vw;
+}
+
+.loading-spinner {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 4px solid rgba(255, 255, 255, 0.15);
+    border-top-color: #60a5fa;
+    animation: bindraw-spin 1s linear infinite;
+}
+
+@keyframes bindraw-spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading-title {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.loading-sub {
+    font-size: 0.85rem;
+    color: #cbd5e1;
+}
+
+.ready-banner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.96);
+    z-index: 9;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 26px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.96), rgba(16, 185, 129, 0.96));
+    color: #fff;
+    box-shadow: 0 12px 36px rgba(16, 185, 129, 0.45);
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+    max-width: 90vw;
+}
+
+.ready-banner.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.ready-banner-emoji {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.ready-banner-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ready-banner-text strong {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.ready-banner-text span {
+    font-size: 0.88rem;
+    opacity: 0.95;
+}
+
+.cursor-indicator {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    transition: opacity 0.1s ease;
+    opacity: 0;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.7);
+    z-index: 3;
+}
+
+.cursor-indicator::after {
+    content: '';
+    position: absolute;
+    inset: 9px;
+    border-radius: 50%;
+    background: currentColor;
+    color: inherit;
+}
+
+.app-footer {
+    text-align: center;
+    color: #9ca3af;
+    padding: 6px 16px 8px;
+    background: rgba(0, 0, 0, 0.4);
+    font-size: 0.78rem;
+}
+
+/* ---------- 响应式 ---------- */
+
+@media (max-width: 720px) {
+    .app-header {
+        padding: 8px 12px 2px;
+    }
+    .app-title {
+        font-size: 1.1rem;
+    }
+    .app-subtitle {
+        font-size: 0.78rem;
+    }
+    input[type="range"] {
+        width: 100px;
+    }
+    .toolbar {
+        gap: 6px 10px;
+        padding: 8px;
+    }
+    .tool-btn {
+        padding: 6px 10px;
+        font-size: 0.82rem;
+    }
+    .legend {
+        right: 8px;
+        top: 8px;
+        max-width: 180px;
+        padding: 6px 10px;
+        font-size: 0.78rem;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --panel-bg: rgba(30, 33, 40, 0.92);
+        --border: #2c2f38;
+        --text: #e6e8ef;
+        --muted: #9aa3b2;
+        --shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
+    }
+
+    .tool-btn {
+        background: #262932;
+        color: var(--text);
+    }
+
+    .tool-btn:hover {
+        background: #2f333d;
+    }
+}
