@@ -1,0 +1,17 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/quiz/quiz",
+    "pages/result/result",
+    "pages/type-detail/type-detail"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#03071e",
+    "navigationBarTitleText": "互联网嘴替测试",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#03071e",
+    "backgroundTextStyle": "light"
+  },
+  "sitemapLocation": "sitemap.json",
+  "style": "v2"
+}

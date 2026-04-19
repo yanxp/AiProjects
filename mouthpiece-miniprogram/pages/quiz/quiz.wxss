@@ -1,0 +1,119 @@
+.page {
+  min-height: 100vh;
+  padding: 0 32rpx;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx 0;
+}
+
+.back {
+  font-size: 28rpx;
+  color: rgba(224,224,240,0.6);
+}
+
+.progress-text {
+  font-size: 26rpx;
+  color: rgba(224,224,240,0.5);
+  font-weight: 600;
+}
+
+/* Progress Bar */
+.progress-bar {
+  height: 6rpx;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3rpx;
+  overflow: hidden;
+  margin-bottom: 48rpx;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00b4d8, #f72585);
+  border-radius: 3rpx;
+  transition: width 0.3s ease;
+}
+
+/* Question */
+.question-area {
+  padding: 16rpx 0;
+}
+
+.model-badge {
+  display: inline-block;
+  background: rgba(0,180,216,0.15);
+  border: 1px solid rgba(0,180,216,0.25);
+  border-radius: 24rpx;
+  padding: 8rpx 24rpx;
+  font-size: 24rpx;
+  color: #00b4d8;
+  margin-bottom: 32rpx;
+}
+
+.question-text {
+  font-size: 38rpx;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.5;
+  margin-bottom: 48rpx;
+}
+
+/* Options */
+.options {
+  display: flex;
+  flex-direction: column;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20rpx;
+  padding: 32rpx 28rpx;
+  margin-bottom: 24rpx;
+}
+
+.option:active {
+  background: rgba(0,180,216,0.15);
+  border-color: rgba(0,180,216,0.4);
+}
+
+.option.selected {
+  background: rgba(0,180,216,0.2);
+  border-color: #00b4d8;
+}
+
+.option.dimmed {
+  opacity: 0.4;
+}
+
+.opt-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  background: rgba(0,180,216,0.15);
+  color: #00b4d8;
+  font-size: 24rpx;
+  font-weight: 700;
+  margin-right: 24rpx;
+  flex-shrink: 0;
+}
+
+.option.selected .opt-letter {
+  background: #00b4d8;
+  color: #03071e;
+}
+
+.opt-text {
+  font-size: 28rpx;
+  color: rgba(224,224,240,0.9);
+  line-height: 1.5;
+}

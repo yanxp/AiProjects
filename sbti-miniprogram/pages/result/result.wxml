@@ -1,0 +1,50 @@
+<view class="page">
+  <!-- Result Card -->
+  <view class="result-card">
+    <text class="result-label">你的SBTI人格类型</text>
+    <text class="result-emoji">{{type.emoji}}</text>
+    <text class="result-code">{{type.code}}</text>
+    <text class="result-name">{{type.name}} · {{type.nameEn}}</text>
+    <text class="result-tagline">"{{type.tagline}}"</text>
+    <view class="divider"></view>
+    <text class="result-desc">{{type.desc}}</text>
+
+    <!-- Traits -->
+    <view class="traits">
+      <text class="trait-tag" wx:for="{{type.traits}}" wx:key="index">{{item}}</text>
+    </view>
+  </view>
+
+  <!-- Dimension Analysis -->
+  <view class="dimension-section">
+    <text class="dim-title">15维度分析</text>
+    <view class="dim-grid">
+      <view class="dim-item" wx:for="{{dimensions}}" wx:key="key">
+        <text class="dim-label">{{item.label}}</text>
+        <view class="dim-bar-bg">
+          <view class="dim-bar-fill" style="width: {{item.percent}}%"></view>
+        </view>
+        <text class="dim-level dim-level-{{item.levelClass}}">{{item.levelText}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Share Canvas (hidden) -->
+  <canvas type="2d" id="shareCanvas" class="share-canvas"></canvas>
+
+  <!-- Actions -->
+  <view class="actions">
+    <button class="btn-share" open-type="share">
+      分享给好友
+    </button>
+    <button class="btn-save" bindtap="onSaveImage">
+      保存结果图片
+    </button>
+    <button class="btn-retry" bindtap="onRetry">
+      重新测试
+    </button>
+    <button class="btn-home" bindtap="onGoHome">
+      返回首页
+    </button>
+  </view>
+</view>

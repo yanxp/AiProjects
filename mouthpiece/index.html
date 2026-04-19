@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>互联网嘴替测试 — 你是哪种网络人格？</title>
+  <meta name="description" content="互联网嘴替测试：30道题测出你的网络人格类型。阴阳大师？键盘侠？吃瓜群众？还是已读不回？">
+  <meta property="og:title" content="互联网嘴替测试 — 你是哪种网络人格？">
+  <meta property="og:description" content="25种网络人格类型，30道互联网场景题，测测你在网上到底是什么人。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ===== Landing Page ===== -->
+  <section id="landing" class="page active">
+    <div class="floating-emojis" aria-hidden="true">🗡️ 🍉 ⌨️ 🎭 💢 🤣 📢 🔍</div>
+
+    <div class="hero">
+      <span class="badge">2026 互联网人格鉴定</span>
+      <h1>你是哪种<br><span class="gradient-text">互联网嘴替</span><br>？</h1>
+      <p class="subtitle">
+        <strong class="accent">互联网嘴替测试</strong>
+        — 测测你在网上到底是什么人格。<br>
+        25种网络人格类型，每一种都精准到让你怀疑手机被监控了。
+      </p>
+
+      <div class="stats">
+        <div class="stat"><span class="stat-num">30</span><span class="stat-label">道题目</span></div>
+        <div class="stat"><span class="stat-num">5</span><span class="stat-label">大模型</span></div>
+        <div class="stat"><span class="stat-num">15</span><span class="stat-label">个维度</span></div>
+        <div class="stat"><span class="stat-num">25</span><span class="stat-label">种人格</span></div>
+      </div>
+
+      <button class="btn-primary" onclick="startQuiz()">开始测试 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+      <span class="note">免费 · 无需注册 · 约3分钟</span>
+
+      <div class="scroll-ticker" aria-hidden="true">
+        <div class="ticker-track">
+          <span>🗡️ YIN-YANG · 阴阳大师</span><span>☀️ ZHENG · 正能量战士</span>
+          <span>🍉 MELON · 吃瓜群众</span><span>⌨️ KEY-B · 键盘侠</span>
+          <span>👻 GHOST · 已读不回</span><span>🤣 HAHA · 哈哈复读机</span>
+          <span>🐟 FISH · 摸鱼达人</span><span>📢 PUSH · 转发狂魔</span>
+          <span>🤿 DIVE · 深海潜水员</span><span>🎭 MASK · 面具人</span>
+          <span>💢 RAGE · 暴怒哥</span><span>🧊 ICE · 冷漠路人</span>
+          <span>📝 ESSAY · 小作文选手</span><span>🎤 KOL · 野生意见领袖</span>
+          <span>🗡️ YIN-YANG · 阴阳大师</span><span>☀️ ZHENG · 正能量战士</span>
+          <span>🍉 MELON · 吃瓜群众</span><span>⌨️ KEY-B · 键盘侠</span>
+          <span>👻 GHOST · 已读不回</span><span>🤣 HAHA · 哈哈复读机</span>
+          <span>🐟 FISH · 摸鱼达人</span><span>📢 PUSH · 转发狂魔</span>
+          <span>🤿 DIVE · 深海潜水员</span><span>🎭 MASK · 面具人</span>
+          <span>💢 RAGE · 暴怒哥</span><span>🧊 ICE · 冷漠路人</span>
+          <span>📝 ESSAY · 小作文选手</span><span>🎤 KOL · 野生意见领袖</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="types-section">
+      <h2>25种网络人格</h2>
+      <p class="section-sub">点击任意卡片了解详情</p>
+      <div class="types-grid" id="typesGrid"></div>
+    </div>
+
+    <footer>
+      <p>互联网嘴替测试 · 纯娱乐，零科学 · 测完记得转发</p>
+      <p class="footer-note">本站仅供娱乐，测试结果不构成任何社交建议。</p>
+    </footer>
+  </section>
+
+  <!-- ===== Quiz Page ===== -->
+  <section id="quiz" class="page">
+    <div class="quiz-header">
+      <button class="btn-back" onclick="goHome()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+      <span id="progressText" class="progress-text">1 / 30</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+    <div id="questionArea" class="question-area">
+      <span class="model-badge" id="questionModel"></span>
+      <h2 id="questionText"></h2>
+      <div id="optionsList" class="options-list"></div>
+    </div>
+  </section>
+
+  <!-- ===== Loading Page ===== -->
+  <section id="loading" class="page">
+    <div class="loading-wrap">
+      <div class="loading-emoji" id="loadingEmoji">🗡️</div>
+      <div class="loading-spinner"></div>
+      <p class="loading-text">正在分析你的网络人格...</p>
+      <p class="loading-sub" id="loadingSub">扫描互联网DNA中...</p>
+    </div>
+  </section>
+
+  <!-- ===== Result Page ===== -->
+  <section id="result" class="page">
+    <div class="result-card">
+      <span class="result-label">你的网络人格类型</span>
+      <div class="result-emoji" id="resultEmoji"></div>
+      <h1 class="result-code" id="resultCode"></h1>
+      <h2 class="result-name" id="resultName"></h2>
+      <p class="result-tagline" id="resultTagline"></p>
+      <div class="result-divider"></div>
+      <p class="result-desc" id="resultDesc"></p>
+      <div class="result-traits" id="resultTraits"></div>
+    </div>
+
+    <div class="dim-section">
+      <h3>15维度分析</h3>
+      <div class="dim-grid" id="dimGrid"></div>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn-share" onclick="shareResult()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg> 分享结果</button>
+      <button class="btn-secondary" onclick="startQuiz()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg> 重新测试</button>
+      <button class="btn-ghost" onclick="goHome()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg> 返回首页</button>
+    </div>
+  </section>
+
+  <script src="js/types.js"></script>
+  <script src="js/questions.js"></script>
+  <script src="js/quiz.js"></script>
+</body>
+</html>

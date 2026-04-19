@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SBTI 人格测试 — 沙雕大测试</title>
+  <meta name="description" content="SBTI 沙雕大人格测试 — 2026年最火的人格测试！30道题，27种人格类型，60秒出结果。免费、无需注册。">
+  <meta property="og:title" content="SBTI 人格测试 — 测测你是哪种沙雕人格">
+  <meta property="og:description" content="27种人格类型，30道荒诞问题，找到你最真实的互联网人格。">
+  <meta property="og:type" content="website">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- ========== LANDING PAGE ========== -->
+  <section id="landing" class="page active">
+    <div class="landing-bg">
+      <div class="floating-emoji" style="--delay:0s;--x:10%;--y:20%">💀</div>
+      <div class="floating-emoji" style="--delay:1s;--x:85%;--y:15%">🐒</div>
+      <div class="floating-emoji" style="--delay:2s;--x:20%;--y:75%">💸</div>
+      <div class="floating-emoji" style="--delay:3s;--x:75%;--y:80%">🔥</div>
+      <div class="floating-emoji" style="--delay:4s;--x:50%;--y:10%">👻</div>
+      <div class="floating-emoji" style="--delay:5s;--x:90%;--y:50%">🤡</div>
+      <div class="floating-emoji" style="--delay:6s;--x:5%;--y:50%">💩</div>
+      <div class="floating-emoji" style="--delay:7s;--x:40%;--y:85%">🌙</div>
+    </div>
+    <div class="landing-content">
+      <div class="badge">2026 最火人格测试</div>
+      <h1 class="landing-title">
+        <span class="title-line">你的</span>
+        <span class="title-line gradient-text">SBTI</span>
+        <span class="title-line">人格是？</span>
+      </h1>
+      <p class="landing-subtitle">
+        <strong>SBTI</strong>（Silly Big Personality Test / 沙雕大测试）<br>
+        不给你体面的标签，只给你最真实的互联网人格。<br>
+        27种人格类型，每一种都精准到让你笑着哭出来。
+      </p>
+      <div class="stats-row">
+        <div class="stat-item">
+          <span class="stat-num">30</span>
+          <span class="stat-label">道题目</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num">5</span>
+          <span class="stat-label">大模型</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num">15</span>
+          <span class="stat-label">个维度</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num">27</span>
+          <span class="stat-label">种人格</span>
+        </div>
+      </div>
+      <button class="btn-start" onclick="startQuiz()">
+        开始测试
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+      <p class="landing-note">免费 · 无需注册 · 约3分钟</p>
+
+      <div class="type-scroll">
+        <div class="type-scroll-track">
+          <span class="scroll-tag">💀 DEAD · 已死之人</span>
+          <span class="scroll-tag">💩 SHIT · 喷子</span>
+          <span class="scroll-tag">🐒 MALO · 猴子</span>
+          <span class="scroll-tag">💸 ATM-er · 提款机</span>
+          <span class="scroll-tag">🔥 FUCK · 野草</span>
+          <span class="scroll-tag">🌙 SOLO · 孤儿</span>
+          <span class="scroll-tag">🪩 IMSB · 傻逼</span>
+          <span class="scroll-tag">👻 GHOST · 鬼魂</span>
+          <span class="scroll-tag">🎮 CTRL · 拿捏者</span>
+          <span class="scroll-tag">👑 BOSS · 领导者</span>
+          <span class="scroll-tag">🤡 JOKE-R · 小丑</span>
+          <span class="scroll-tag">💔 LOVE-R · 恋人</span>
+          <span class="scroll-tag">😴 ZZZZ · 装死</span>
+          <span class="scroll-tag">🧘 MONK · 僧人</span>
+          <span class="scroll-tag">💀 DEAD · 已死之人</span>
+          <span class="scroll-tag">💩 SHIT · 喷子</span>
+          <span class="scroll-tag">🐒 MALO · 猴子</span>
+          <span class="scroll-tag">💸 ATM-er · 提款机</span>
+          <span class="scroll-tag">🔥 FUCK · 野草</span>
+          <span class="scroll-tag">🌙 SOLO · 孤儿</span>
+          <span class="scroll-tag">🪩 IMSB · 傻逼</span>
+          <span class="scroll-tag">👻 GHOST · 鬼魂</span>
+          <span class="scroll-tag">🎮 CTRL · 拿捏者</span>
+          <span class="scroll-tag">👑 BOSS · 领导者</span>
+          <span class="scroll-tag">🤡 JOKE-R · 小丑</span>
+          <span class="scroll-tag">💔 LOVE-R · 恋人</span>
+          <span class="scroll-tag">😴 ZZZZ · 装死</span>
+          <span class="scroll-tag">🧘 MONK · 僧人</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Types Preview -->
+    <div class="types-preview">
+      <h2 class="section-title">27种沙雕人格</h2>
+      <p class="section-sub">点击任意卡片了解详情</p>
+      <div class="types-grid" id="typesGrid"></div>
+    </div>
+
+    <footer class="landing-footer">
+      <p>SBTI 沙雕大测试 · 纯娱乐，零科学 · 灵感来自B站UP主蛆肉儿串儿</p>
+      <p>本站仅供娱乐，测试结果不构成任何心理学建议。</p>
+    </footer>
+  </section>
+
+  <!-- ========== QUIZ PAGE ========== -->
+  <section id="quiz" class="page">
+    <div class="quiz-container">
+      <div class="quiz-header">
+        <button class="btn-back" onclick="goHome()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="progress-info">
+          <span id="progressText">1 / 30</span>
+        </div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+      <div class="question-area" id="questionArea">
+        <div class="question-model" id="questionModel"></div>
+        <h2 class="question-text" id="questionText"></h2>
+        <div class="options-list" id="optionsList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== LOADING PAGE ========== -->
+  <section id="loading" class="page">
+    <div class="loading-container">
+      <div class="loading-spinner">
+        <div class="spinner-ring"></div>
+        <div class="spinner-emoji" id="loadingEmoji">🔮</div>
+      </div>
+      <h2 class="loading-text">正在分析你的沙雕人格...</h2>
+      <p class="loading-sub" id="loadingSub">计算15个维度中...</p>
+    </div>
+  </section>
+
+  <!-- ========== RESULT PAGE ========== -->
+  <section id="result" class="page">
+    <div class="result-container">
+      <div class="result-card" id="resultCard">
+        <div class="result-badge">你的SBTI人格类型</div>
+        <div class="result-emoji" id="resultEmoji"></div>
+        <h1 class="result-code" id="resultCode"></h1>
+        <h2 class="result-name" id="resultName"></h2>
+        <p class="result-tagline" id="resultTagline"></p>
+        <div class="result-divider"></div>
+        <p class="result-desc" id="resultDesc"></p>
+        <div class="result-traits" id="resultTraits"></div>
+      </div>
+
+      <div class="dimension-section">
+        <h3 class="dim-title">15维度分析</h3>
+        <div class="dimension-grid" id="dimensionGrid"></div>
+      </div>
+
+      <div class="result-actions">
+        <button class="btn-share" onclick="shareResult()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          分享结果
+        </button>
+        <button class="btn-retry" onclick="retakeQuiz()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          重新测试
+        </button>
+        <button class="btn-home" onclick="goHome()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          返回首页
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="js/types.js"></script>
+  <script src="js/questions.js"></script>
+  <script src="js/quiz.js"></script>
+</body>
+</html>

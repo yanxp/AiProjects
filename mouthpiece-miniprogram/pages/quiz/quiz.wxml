@@ -1,0 +1,31 @@
+<view class="page">
+  <!-- Progress -->
+  <view class="header">
+    <view class="back" bindtap="goBack">← 返回</view>
+    <text class="progress-text">{{currentQuestion + 1}} / {{totalQuestions}}</text>
+  </view>
+
+  <view class="progress-bar">
+    <view class="progress-fill" style="width: {{progress}}%"></view>
+  </view>
+
+  <!-- Question -->
+  <view class="question-area">
+    <view class="model-badge">{{question.model}}</view>
+    <view class="question-text">{{question.text}}</view>
+
+    <view class="options">
+      <view
+        wx:for="{{question.options}}"
+        wx:key="text"
+        class="option {{selectedIndex == index ? 'selected' : ''}} {{selectedIndex >= 0 && selectedIndex != index ? 'dimmed' : ''}}"
+        bindtap="selectOption"
+        data-index="{{index}}"
+        data-score="{{item.score}}"
+      >
+        <text class="opt-letter">{{letters[index]}}</text>
+        <text class="opt-text">{{item.text}}</text>
+      </view>
+    </view>
+  </view>
+</view>
