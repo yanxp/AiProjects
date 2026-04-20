@@ -104,9 +104,14 @@ async def retriever_node(state: AgentState, emit: Emitter) -> dict:
     # 本地 RAG 只对"原始用户 query"搜一次（片段是你自己的文档，不需要多 query 展开）。
     tasks: list = [openalex.search(q, top_k=10) for q in queries]
     rag_task_idx = -1
-    if s.RAG_ENABLED and local_rag.is_available():
+    rag_enabled = s.RAG_ENABLED and local_rag.is_available()
+    if rag_enabled:
         rag_task_idx = len(tasks)
         tasks.append(local_rag.search(state["query"], top_k=s.RAG_TOP_K))
+    elif s.RAG_ENABLED:
+        # 用户开了 RAG 但索引不可用（没建 / 路径不对 / pickle 坏），
+        # 打一条事件让上层能看到，别以为没效果是 bug。
+        emit("rag", {"enabled": True, "available": False, "hits": []})
 
     results_per_q = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -129,6 +134,35 @@ async def retriever_node(state: AgentState, emit: Emitter) -> dict:
     # 本地片段包装成 Paper，混进同一个候选池，复用后续 Reader/Reflector/Synthesizer
     if rag_task_idx >= 0:
         rag_res = results_per_q[rag_task_idx]
+        # 单独 emit 一条 rag 事件，让 CLI / 前端能独立展示"本地检索到了什么"，
+        # 不被 OpenAlex 的列表淹没。
+        if isinstance(rag_res, Exception):
+            emit(
+                "rag",
+                {
+                    "enabled": True,
+                    "available": True,
+                    "error": str(rag_res),
+                    "hits": [],
+                },
+            )
+        else:
+            emit(
+                "rag",
+                {
+                    "enabled": True,
+                    "available": True,
+                    "hits": [
+                        {
+                            "score": float(h.get("score", 0.0)),
+                            "source": h.get("source", ""),
+                            # 预览截断：CLI 里列全文太长；完整 snippet 进 Paper.abstract
+                            "preview": (h.get("snippet", "") or "")[:200],
+                        }
+                        for h in rag_res
+                    ],
+                },
+            )
         if not isinstance(rag_res, Exception):
             for h in rag_res:
                 source = h.get("source", "local")
