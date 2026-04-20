@@ -6,6 +6,7 @@
 """
 
 from functools import lru_cache
+from typing import List, Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -16,8 +17,9 @@ class Settings(BaseSettings):
     LLM_API_KEY: str = "sk-placeholder"                # API Key
     LLM_MODEL: str = "deepseek-chat"                   # 模型名
 
-    # 轻量模型（用于查询改写、便宜的判断）；不设则复用主模型
-    LLM_SMALL_MODEL: str | None = None
+    # 轻量模型（用于查询改写、便宜的判断）；不设则复用主模型。
+    # 用 Optional[str] 而不是 `str | None`，以兼容 Python 3.9（PEP 604 union 在 3.10+ 才支持）。
+    LLM_SMALL_MODEL: Optional[str] = None
 
     # Agent 控制参数 ----------------------------------------------
     AGENT_MAX_STEPS: int = 4   # 最大循环步数，防止死循环
@@ -30,7 +32,7 @@ class Settings(BaseSettings):
 
     # CORS --------------------------------------------------------
     # 前端开发时是 http://localhost:3000；生产可以改成你自己的域名
-    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
     model_config = SettingsConfigDict(
         env_file=(".env", "../../.env"),  # 支持在 api 目录或仓库根目录放 .env

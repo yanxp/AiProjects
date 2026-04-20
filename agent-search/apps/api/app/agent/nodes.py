@@ -203,12 +203,21 @@ async def reflector_node(state: AgentState, emit: Emitter) -> dict:
     missing = data.get("missing") or []
     sufficient = bool(data.get("sufficient"))
 
+    # 若 LLM 判"足够"，就把 missing 显式清空，避免 router 看到非空 missing 误判要回跳。
+    # 这让 sufficient 成为是否回跳的唯一真相来源（见 graph.py 的 route_after_reflect）。
+    if sufficient:
+        missing = []
+
     emit("reflect", {"sufficient": sufficient, "missing": missing})
 
-    # 若不够且未超过步数上限，把缺失点作为新 sub_queries 加入，回到 Retriever
-    out: dict = {"missing": missing, "step": state.get("step", 0) + 1}
+    # 把 sufficient 也写入 state，router 据此决定路由；miss 仍保留用于 UI 展示 / 日志
+    out: dict = {
+        "missing": missing,
+        "sufficient": sufficient,
+        "step": state.get("step", 0) + 1,
+    }
+    # 仅在"还不够"且未超上限时，把缺失点作为新 sub_queries 注入，回到 Retriever
     if not sufficient and state.get("step", 0) + 1 < s.AGENT_MAX_STEPS:
-        # 把每个 "missing" 也当成一个新 query 去搜
         out["sub_queries"] = missing[:3]
     return out
 
