@@ -173,7 +173,9 @@ async def retriever_node(state: AgentState, emit: Emitter) -> dict:
                     continue
                 p = Paper(
                     id=pid,
-                    title=f"[Local] {source}",
+                    # title 用 source 本身即可；上层通过 source="local" 区分，demo.py
+                    # 会自己加 [Local] 前缀，不在 title 里双重标注。
+                    title=source,
                     abstract=snippet,       # Reader 只看 abstract，直接当摘要喂
                     authors=[],
                     year=None,
