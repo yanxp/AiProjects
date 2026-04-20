@@ -73,7 +73,9 @@ async def planner_node(state: AgentState, emit: Emitter) -> dict:
         ],
         model=s.LLM_SMALL_MODEL or s.LLM_MODEL,
         temperature=0.1,
-        response_format={"type": "json_object"},
+        # response_format 只有在 provider 明确支持时才开（LLM_JSON_MODE=true）。
+        # Ark 部分 endpoint 不认这个参数，会回 5xx / 假 ModelLoading。
+        response_format={"type": "json_object"} if s.LLM_JSON_MODE else None,
     )
     data = _safe_json_loads(raw)
     sub_queries = data.get("sub_queries", [])[:5] or [query]  # 兜底：至少用原问题
@@ -149,7 +151,7 @@ async def reader_node(state: AgentState, emit: Emitter) -> dict:
             ],
             model=s.LLM_SMALL_MODEL or s.LLM_MODEL,
             temperature=0.1,
-            response_format={"type": "json_object"},
+            response_format={"type": "json_object"} if s.LLM_JSON_MODE else None,
         )
         try:
             data = _safe_json_loads(raw)
@@ -192,7 +194,7 @@ async def reflector_node(state: AgentState, emit: Emitter) -> dict:
         ],
         model=s.LLM_SMALL_MODEL or s.LLM_MODEL,
         temperature=0.1,
-        response_format={"type": "json_object"},
+        response_format={"type": "json_object"} if s.LLM_JSON_MODE else None,
     )
     try:
         data = _safe_json_loads(raw)
