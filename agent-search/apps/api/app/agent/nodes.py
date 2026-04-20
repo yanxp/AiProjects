@@ -77,7 +77,12 @@ async def planner_node(state: AgentState, emit: Emitter) -> dict:
         # Ark 部分 endpoint 不认这个参数，会回 5xx / 假 ModelLoading。
         response_format={"type": "json_object"} if s.LLM_JSON_MODE else None,
     )
-    data = _safe_json_loads(raw)
+    # LLM_JSON_MODE=false 时 LLM 可能返回非 JSON 文本（Ark 等 provider 不强制 JSON 输出），
+    # 解析失败就降级成"只用原 query 检索"，不要让整条 pipeline 挂。
+    try:
+        data = _safe_json_loads(raw)
+    except Exception:
+        data = {}
     sub_queries = data.get("sub_queries", [])[:5] or [query]  # 兜底：至少用原问题
 
     emit("plan", {"sub_queries": sub_queries})
