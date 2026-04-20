@@ -130,9 +130,12 @@ async def _main_async(src: Path, include_pdf: bool) -> None:
         print("[err] 切块后没有可嵌入的文本", file=sys.stderr)
         sys.exit(1)
 
-    model_label = s.EMBED_LOCAL_MODEL if s.EMBED_BACKEND == "local" else s.LLM_EMBED_MODEL
+    # 统一大小写，和 embeddings.embed() 里的 .lower() 对齐；否则 EMBED_BACKEND=Local
+    # 会路由到本地后端，但这里却把 API 模型名写进索引元数据，造成 model/backend 不匹配。
+    backend = (s.EMBED_BACKEND or "api").lower()
+    model_label = s.EMBED_LOCAL_MODEL if backend == "local" else s.LLM_EMBED_MODEL
     print(
-        f"[chunk] 共 {len(chunks)} 个片段，开始嵌入（backend={s.EMBED_BACKEND}, model={model_label}）"
+        f"[chunk] 共 {len(chunks)} 个片段，开始嵌入（backend={backend}, model={model_label}）"
     )
     matrix = await _embed_all(chunks)
 
@@ -143,7 +146,7 @@ async def _main_async(src: Path, include_pdf: bool) -> None:
         "sources": sources,
         "vectors": matrix,
         "model": model_label,
-        "backend": s.EMBED_BACKEND,
+        "backend": backend,
     }
     with out_path.open("wb") as f:
         pickle.dump(payload, f, protocol=pickle.HIGHEST_PROTOCOL)
