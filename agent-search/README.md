@@ -56,13 +56,25 @@ mkdir docs && cp ~/notes/*.md docs/
 # 2. 建索引（写出 rag_index.pkl）
 python scripts/build_index.py ./docs
 
-# 3. 打开 RAG（或写进 .env）
+# 3. 打开 RAG
 export RAG_ENABLED=true
-export LLM_EMBED_MODEL=text-embedding-3-small   # 或 Ark 的 ep-xxx
 
-# 4. 跑 demo；Retriever 会把本地片段和 OpenAlex 结果混进同一个候选池
+# 4. 选嵌入后端：
+#  (A) 走 API：OpenAI / Ark embedding endpoint / vLLM 起的 bge-m3
+export EMBED_BACKEND=api
+export LLM_EMBED_MODEL=text-embedding-3-small   # 或 Ark 的 ep-xxx
+#  (B) 本地 sentence-transformers（零外部调用，首次会下权重到 ~/.cache/huggingface/）
+pip install sentence-transformers
+export EMBED_BACKEND=local
+export EMBED_LOCAL_MODEL=BAAI/bge-small-zh-v1.5   # 中英双语 ~100MB
+
+# 5. 跑 demo；Retriever 会把本地片段和 OpenAlex 结果混进同一个候选池
 python demo.py "..."
 ```
+
+> **DeepSeek 用户注意**：DeepSeek 不提供 embeddings API。把 `EMBED_BACKEND=local` 最省事。
+
+> **Ark/豆包 用户注意**：chat 和 embedding 需要**两个独立的 endpoint**（在控制台创建 embedding 类型 endpoint），填在 `LLM_EMBED_MODEL`。不想开就切 local。
 
 实现细节：`pickle + numpy` 点积余弦，无额外服务和依赖。建索引时片段被 L2 归一化，运行时 query 编码后直接 `vectors @ qv` 取 top-k。见 [`apps/api/app/retrieval/local_rag.py`](apps/api/app/retrieval/local_rag.py) 和 [`scripts/build_index.py`](scripts/build_index.py)。
 

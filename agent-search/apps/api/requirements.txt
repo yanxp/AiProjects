@@ -11,5 +11,9 @@ sse-starlette>=2.1
 python-dotenv>=1.0
 # 本地 RAG：pickle + numpy 点积（最简版）
 numpy>=1.24
+# 可选：EMBED_BACKEND=local 时需要（本地嵌入，不调外部 API）
+# 装完首次用会下载 HuggingFace 权重到 ~/.cache/huggingface/
+# pip install sentence-transformers
+# sentence-transformers>=2.7
 # 可选：scripts/build_index.py --pdf 需要 pypdf；默认 md/txt 不装也行
 # pypdf>=4.0
