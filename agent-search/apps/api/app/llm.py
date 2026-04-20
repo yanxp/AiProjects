@@ -28,11 +28,16 @@ from openai import (
 
 from .config import get_settings
 
-# 重试参数：首次失败后等 1s、2s、4s 各重试一次，最多 4 次调用。
-# 对 Ark 冷启动（几十秒内可预热完）这个窗口基本够用；如果还是失败就让它抛。
-_RETRY_ATTEMPTS = 4
-_RETRY_BASE_DELAY = 1.0
-_RETRY_MAX_DELAY = 8.0
+# 重试调度表（单位：秒）。
+# 每个表代表一种错误类别的"等待序列"：第 N 次失败后睡 _SCHEDULES[...][N-1]，
+# 序列用完还失败就抛给上层。表长 = 最多重试次数，总调用次数 = 表长 + 1。
+_SCHEDULES: dict[str, list[float]] = {
+    # 普通瞬态错误（网络抖动、一般 5xx、429）：10 秒级别就够，过久反而拖慢失败反馈
+    "generic": [1.0, 2.0, 4.0],
+    # Ark / 豆包 endpoint 冷启动返回 `ModelLoading`，实测通常 30-60s 才预热完。
+    # 给 ~70s 的总窗口；如果这都不够就是 endpoint 有问题，让用户去控制台看
+    "model_loading": [5.0, 10.0, 15.0, 20.0, 20.0],
+}
 
 # openai SDK 里被视为"瞬态"的异常族。遇到这些就退避重试。
 _TRANSIENT_EXCS: tuple[type[BaseException], ...] = (
@@ -46,27 +51,50 @@ T = TypeVar("T")
 
 
 def _client() -> AsyncOpenAI:
-    """构造 OpenAI 兼容客户端；每次调用都现取，方便测试中 monkeypatch 配置。"""
+    """构造 OpenAI 兼容客户端；每次调用都现取,方便测试中 monkeypatch 配置。"""
     s = get_settings()
     return AsyncOpenAI(base_url=s.LLM_BASE_URL, api_key=s.LLM_API_KEY)
+
+
+def _classify(exc: BaseException) -> str:
+    """
+    根据异常内容选择退避表。
+    目前只区分：Ark 的 `ModelLoading`（需长窗口） vs 其它瞬态错误（短窗口）。
+    用 str(exc) 子串匹配而不是 exc.body["error"]["code"]，因为不同 provider 的
+    错误体结构不一；字符串匹配对误判的代价只是"用了长表"，风险可接受。
+    """
+    if "ModelLoading" in str(exc):
+        return "model_loading"
+    return "generic"
 
 
 async def _with_retry(fn: Callable[[], Any], label: str) -> Any:
     """对给定的 async 调用执行退避重试；仅重试瞬态错误，4xx 直接抛出。"""
     last_exc: BaseException | None = None
-    for attempt in range(1, _RETRY_ATTEMPTS + 1):
+    # 允许在运行时根据第一次看到的异常动态切换调度表
+    # （某些情况下首错和后续错的类别可能不同，比如连接抖动后 endpoint 开始 loading）
+    schedule: list[float] = _SCHEDULES["generic"]
+    max_attempts = len(schedule) + 1
+    attempt = 0
+    while True:
+        attempt += 1
         try:
             return await fn()
         except _TRANSIENT_EXCS as exc:
             last_exc = exc
-            if attempt >= _RETRY_ATTEMPTS:
+            # 根据异常实际类别动态选调度表；若已用更长的表就不降级
+            category = _classify(exc)
+            if category == "model_loading" and schedule is not _SCHEDULES["model_loading"]:
+                schedule = _SCHEDULES["model_loading"]
+                max_attempts = len(schedule) + 1
+            if attempt >= max_attempts:
                 break
-            # 退避时间：1s、2s、4s，上限 _RETRY_MAX_DELAY
-            delay = min(_RETRY_BASE_DELAY * (2 ** (attempt - 1)), _RETRY_MAX_DELAY)
+            # 当前尝试号对应 schedule[attempt-1]
+            delay = schedule[attempt - 1]
             # 用 stderr 打印，避免污染 Synthesizer 的 stdout 流式输出
             print(
-                f"[llm.{label}] transient error (attempt {attempt}/{_RETRY_ATTEMPTS}): "
-                f"{type(exc).__name__}: {exc}; retrying in {delay:.1f}s",
+                f"[llm.{label}] transient error (attempt {attempt}/{max_attempts}, "
+                f"{category}): {type(exc).__name__}: {exc}; retrying in {delay:.1f}s",
                 file=sys.stderr,
                 flush=True,
             )
