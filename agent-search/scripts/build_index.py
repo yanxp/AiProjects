@@ -38,7 +38,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT / "apps" / "api") not in sys.path:
     sys.path.insert(0, str(REPO_ROOT / "apps" / "api"))
 
-from app import llm  # noqa: E402
+from app import embeddings  # noqa: E402
 from app.config import get_settings  # noqa: E402
 
 
@@ -94,13 +94,13 @@ def _chunk(text: str, size: int = 500, overlap: int = 50) -> list[str]:
 
 
 async def _embed_all(chunks: list[str], batch: int = 64) -> np.ndarray:
-    """分批调 embedding API，拼成 (N, D) numpy 矩阵并归一化。"""
+    """分批调 embedding（API 或本地），拼成 (N, D) numpy 矩阵并 L2 归一化。"""
     vectors: list[list[float]] = []
     total = len(chunks)
     for i in range(0, total, batch):
         part = chunks[i : i + batch]
         print(f"[embed] {min(i + batch, total)}/{total}", flush=True)
-        vs = await llm.embed(part)
+        vs = await embeddings.embed(part)
         vectors.extend(vs)
     arr = np.asarray(vectors, dtype="float32")
     # L2 归一化，运行时可直接点积 = 余弦相似度
@@ -130,7 +130,10 @@ async def _main_async(src: Path, include_pdf: bool) -> None:
         print("[err] 切块后没有可嵌入的文本", file=sys.stderr)
         sys.exit(1)
 
-    print(f"[chunk] 共 {len(chunks)} 个片段，开始嵌入（model={s.LLM_EMBED_MODEL}）")
+    model_label = s.EMBED_LOCAL_MODEL if s.EMBED_BACKEND == "local" else s.LLM_EMBED_MODEL
+    print(
+        f"[chunk] 共 {len(chunks)} 个片段，开始嵌入（backend={s.EMBED_BACKEND}, model={model_label}）"
+    )
     matrix = await _embed_all(chunks)
 
     out_path = Path(s.RAG_INDEX_PATH)
@@ -139,7 +142,8 @@ async def _main_async(src: Path, include_pdf: bool) -> None:
         "chunks": chunks,
         "sources": sources,
         "vectors": matrix,
-        "model": s.LLM_EMBED_MODEL,
+        "model": model_label,
+        "backend": s.EMBED_BACKEND,
     }
     with out_path.open("wb") as f:
         pickle.dump(payload, f, protocol=pickle.HIGHEST_PROTOCOL)

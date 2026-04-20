@@ -28,7 +28,7 @@ from typing import Optional
 
 import numpy as np
 
-from .. import llm
+from .. import embeddings
 from ..config import get_settings
 
 
@@ -36,16 +36,21 @@ from ..config import get_settings
 def _load_index() -> Optional[dict]:
     """
     懒加载索引文件。缓存一份避免每次 query 都读盘。
-    索引不存在时返回 None，让调用方降级（不是抛异常，避免把整条 pipeline 拖挂）。
+    索引不存在或坏掉都返回 None，让调用方降级（不是抛异常，避免把整条 pipeline 拖挂）。
+    pickle.load 可能抛 UnpicklingError / ModuleNotFoundError / numpy 版本不兼容等，全部吃掉。
     """
     s = get_settings()
     path = Path(s.RAG_INDEX_PATH)
     if not path.exists():
         return None
-    with path.open("rb") as f:
-        idx = pickle.load(f)
+    try:
+        with path.open("rb") as f:
+            idx = pickle.load(f)
+    except Exception:
+        # 坏 pickle / 版本不兼容 / 权限等，一律降级
+        return None
     # 简单校验：必须含这三个字段
-    if not all(k in idx for k in ("chunks", "sources", "vectors")):
+    if not isinstance(idx, dict) or not all(k in idx for k in ("chunks", "sources", "vectors")):
         return None
     return idx
 
@@ -72,8 +77,8 @@ async def search(query: str, top_k: int = 5) -> list[dict]:
     if idx is None:
         return []
 
-    # 调 embedding API 编码 query
-    vectors_q = await llm.embed([query])
+    # 编码 query（API / 本地 sentence-transformers 由 EMBED_BACKEND 决定）
+    vectors_q = await embeddings.embed([query])
     qv = np.asarray(vectors_q[0], dtype="float32")
     qv = _l2_normalize(qv)
 

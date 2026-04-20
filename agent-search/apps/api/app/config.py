@@ -21,11 +21,23 @@ class Settings(BaseSettings):
     # 用 Optional[str] 而不是 `str | None`，以兼容 Python 3.9（PEP 604 union 在 3.10+ 才支持）。
     LLM_SMALL_MODEL: Optional[str] = None
 
-    # 嵌入模型（用于本地 RAG 建库 + 运行时 query 编码）。
+    # 嵌入后端 ---------------------------------------------------
+    # "api"   → 走 OpenAI 兼容的 embeddings API（用 LLM_EMBED_MODEL）
+    # "local" → 本地 sentence-transformers，零外部调用（用 EMBED_LOCAL_MODEL）
+    # DeepSeek 不提供 embeddings，Ark 需要单独开 embedding endpoint；不想折腾就用 "local"。
+    EMBED_BACKEND: str = "api"
+
+    # API 嵌入模型名（EMBED_BACKEND=api 时生效）
     # OpenAI: text-embedding-3-small / text-embedding-3-large
     # 豆包/Ark: 创建 embedding 类型的 endpoint，填 ep-xxx
     # 自托管：vLLM/TEI 启动 bge-m3 之类
     LLM_EMBED_MODEL: str = "text-embedding-3-small"
+
+    # 本地嵌入模型（EMBED_BACKEND=local 时生效；HuggingFace 路径）
+    # - bge-small-zh-v1.5：中英都能用，512 维，~100MB，首次用会下载
+    # - bge-m3：多语言+多粒度，~2GB，质量更好但大
+    # - paraphrase-multilingual-MiniLM-L12-v2：多语言小模型，~420MB
+    EMBED_LOCAL_MODEL: str = "BAAI/bge-small-zh-v1.5"
 
     # 本地 RAG ----------------------------------------------------
     RAG_ENABLED: bool = False             # 默认关，开后 Retriever 会并发查本地 pickle 索引
