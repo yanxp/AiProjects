@@ -7,6 +7,8 @@
 - 少量示例（few-shot）：提升稳定性
 """
 
+from typing import Optional
+
 # ===== Planner：把用户问题拆成若干英文学术检索 query =====
 # 为什么强制英文？学术文献以英文为主，中文 query 直接搜会大幅降低召回。
 PLANNER_SYSTEM = """你是一名资深学术检索专家。用户会给你一个研究问题，
@@ -63,10 +65,33 @@ def reader_user_prompt(query: str, paper) -> str:
     )
 
 
-def synthesizer_user_prompt(query: str, evidences: list) -> str:
-    """把所有证据编号后喂给 Synthesizer。"""
+def synthesizer_user_prompt(
+    query: str, evidences: list, memory_hits: Optional[list] = None
+) -> str:
+    """
+    把所有证据编号后喂给 Synthesizer。
+
+    memory_hits 是可选的"相关历史问答"（episodic 记忆召回结果），
+    用作补充上下文。格式和正文引用的 [n] 证据**严格隔离**，以免模型把 [mem N]
+    当成主证据。system prompt 里也说明了这一点（见 SYNTHESIZER_SYSTEM）。
+    """
     lines = [f"用户问题：{query}", "", "已有证据："]
     for i, ev in enumerate(evidences, 1):
         # 附上 paper_id 让模型能在答案里指向具体文献
         lines.append(f"[{i}] (paper={ev.paper_id}) {ev.claim} —— {ev.snippet}")
+
+    if memory_hits:
+        lines.append("")
+        lines.append(
+            "---\n以下是过去对相似问题给出的答案（仅供参考，可能已过期；"
+            "不要用 [memN] 作为正文引用标号，只当作背景）："
+        )
+        for i, h in enumerate(memory_hits, 1):
+            past_q = (h.get("query") or "").strip()
+            past_a = (h.get("answer") or "").strip()
+            # 截短老答案，省 token 也降低盖过正文证据的风险
+            if len(past_a) > 600:
+                past_a = past_a[:600] + "…"
+            lines.append(f"[mem{i}] Q: {past_q}\n       A: {past_a}")
+
     return "\n".join(lines)

@@ -44,6 +44,34 @@ class Settings(BaseSettings):
     RAG_INDEX_PATH: str = "rag_index.pkl" # 相对 demo.py 所在目录；build_index.py 也写到这里
     RAG_TOP_K: int = 5                    # 每次注入多少条本地片段到候选池
 
+    # 记忆（episodic）---------------------------------------------
+    # MEMORY_MODE:
+    #   off    → 完全关闭（默认）；不读不写
+    #   recall → 每次请求前 recall 相关历史 Q/A 注入给 Synthesizer；
+    #            Synthesizer 跑完后 remember 新一条（带 supersedes 更新逻辑）
+    # 未来可能加 cache 档（相似度超阈值直接返历史 answer，跳过整个 Agent），MVP 先不做。
+    MEMORY_MODE: str = "off"
+
+    # JSONL 存储路径；~ 会被展开。单文件 append-only，崩了最多丢最后一行。
+    MEMORY_PATH: str = "~/.agent-search/memory.jsonl"
+
+    # recall 阶段：取 top-K、score 低于 threshold 的丢弃
+    MEMORY_RECALL_K: int = 3
+    MEMORY_RECALL_THR: float = 0.75
+
+    # remember 阶段："视为同一个问题"的余弦阈值；超过则按 UPDATE_POLICY 处理
+    MEMORY_UPDATE_THR: float = 0.92
+
+    # 同一问题的更新策略：
+    #   supersede → 新行打 supersedes 指针，recall 只看新的（默认）
+    #   append    → 新老两条都保留（便于手动对比 / diff）
+    #   skip      → 已有就不写（省空间）
+    MEMORY_UPDATE_POLICY: str = "supersede"
+
+    # 超过多少天的 episode 不再参与 recall（依然保留在文件里，仅不召回）。
+    # 0 表示不启用 TTL。
+    MEMORY_MAX_AGE_DAYS: int = 0
+
     # 是否在 Planner/Reader/Reflector 这些节点上启用 OpenAI 的
     # `response_format={"type":"json_object"}` 强制 JSON 输出。
     # 默认 False，因为：

@@ -24,3 +24,8 @@ build/
 # Logs
 *.log
 logs/
+
+# Agent local artifacts
+rag_index.pkl
+memory.jsonl
+.agent-search/

@@ -18,7 +18,7 @@ from collections.abc import Callable
 from ..config import get_settings
 from ..retrieval import local_rag, openalex
 from ..schemas import Evidence, Paper
-from .. import llm
+from .. import llm, memory
 from .prompts import (
     PLANNER_SYSTEM,
     READER_SYSTEM,
@@ -55,6 +55,55 @@ def _safe_json_loads(text: str) -> dict:
         if start != -1 and end != -1 and end > start:
             return json.loads(text[start : end + 1])
         raise
+
+
+# ========== Node 0: Memory Recall ==========
+async def memory_recall_node(state: AgentState, emit: Emitter) -> dict:
+    """
+    在 Planner 之前跑一次，把"语义上相近的历史 Q/A"召回出来，
+    写入 state["memory_hits"] 供后续节点（主要是 Synthesizer）作为上下文。
+
+    三种情形都不阻塞主流程：
+    - MEMORY_MODE=off             → 直接返回空（不触任何 I/O、不发事件）
+    - state["memory_refresh"]=True → 用户要求强刷新，跳过 recall（写还是会写）
+    - recall 失败/无命中           → memory_hits 写成空数组，上层 emit 便于调试
+    """
+    s = get_settings()
+    mode = (s.MEMORY_MODE or "off").lower()
+    if mode == "off":
+        return {}
+
+    # --memory-refresh：用户明确要"这次别用历史"，比如知道新论文出来了要刷新
+    if state.get("memory_refresh"):
+        emit("memory_hit", {"enabled": True, "refreshed": True, "hits": []})
+        return {"memory_hits": []}
+
+    try:
+        hits = await memory.recall(state["query"])
+    except Exception as e:
+        # recall 只是上下文增强，任何异常都不应该让整条 pipeline 挂掉
+        emit("memory_hit", {"enabled": True, "error": str(e), "hits": []})
+        return {"memory_hits": []}
+
+    emit(
+        "memory_hit",
+        {
+            "enabled": True,
+            "refreshed": False,
+            "hits": [
+                {
+                    "id": h.get("id"),
+                    "score": float(h.get("score", 0.0)),
+                    "ts": h.get("ts"),
+                    "query": h.get("query"),
+                    # 预览截断：CLI / 事件流只要摘要，完整 answer 在 memory_hits 里
+                    "answer_preview": (h.get("answer") or "")[:200],
+                }
+                for h in hits
+            ],
+        },
+    )
+    return {"memory_hits": hits}
 
 
 # ========== Node 1: Planner ==========
@@ -316,11 +365,18 @@ async def synthesizer_node(state: AgentState, emit: Emitter) -> dict:
         emit("answer_delta", {"delta": msg})
         return {"answer": msg}
 
+    # 记忆召回结果作为补充上下文（可为空）；prompts.py 里会写入"独立区块"，
+    # 并在 system prompt 里明确"不作为正文引用"。
+    memory_hits = state.get("memory_hits") or []
+
     acc: list[str] = []
     async for delta in llm.stream_chat(
         messages=[
             {"role": "system", "content": SYNTHESIZER_SYSTEM},
-            {"role": "user", "content": synthesizer_user_prompt(query, notes)},
+            {
+                "role": "user",
+                "content": synthesizer_user_prompt(query, notes, memory_hits),
+            },
         ],
         temperature=0.3,
     ):
@@ -328,3 +384,56 @@ async def synthesizer_node(state: AgentState, emit: Emitter) -> dict:
         emit("answer_delta", {"delta": delta})
 
     return {"answer": "".join(acc)}
+
+
+# ========== Node 6: Memory Write ==========
+async def memory_write_node(state: AgentState, emit: Emitter) -> dict:
+    """
+    Synthesizer 跑完后把本轮 Q/A 写回 JSONL 记忆。
+
+    supersedes 判断和 policy 都在 memory.remember 内部处理，这里只负责：
+    - MEMORY_MODE=off          → 跳过
+    - 没有有效 answer           → 跳过（兜底文案也不值得存）
+    - 任何 I/O / 嵌入异常       → 静默降级，不污染正常流程
+    """
+    s = get_settings()
+    if (s.MEMORY_MODE or "off").lower() == "off":
+        return {}
+
+    answer = (state.get("answer") or "").strip()
+    # Synthesizer 兜底文案，不值得记（记了会把下次真答案盖掉）
+    if not answer or answer.startswith("抱歉，没有在可访问的"):
+        return {}
+
+    # 只记"主 answer 依赖的"论文 —— 即 Reader 抽到的 notes 对应 paper_ids 去重
+    paper_ids: list[str] = []
+    seen_ids: set[str] = set()
+    for ev in state.get("notes", []) or []:
+        pid = getattr(ev, "paper_id", None)
+        if pid and pid not in seen_ids:
+            seen_ids.add(pid)
+            paper_ids.append(pid)
+
+    try:
+        rec = await memory.remember(state["query"], answer, paper_ids)
+    except Exception as e:
+        emit("memory_write", {"written": False, "error": str(e)})
+        return {}
+
+    if rec is None:
+        # memory.remember 内部按 policy 决定"skip"，或嵌入失败等；
+        # 这里也打一条事件，让 CLI / 调试能看到为啥没写成
+        emit("memory_write", {"written": False, "reason": "skipped_by_policy_or_embed_fail"})
+        return {}
+
+    emit(
+        "memory_write",
+        {
+            "written": True,
+            "id": rec.get("id"),
+            "ts": rec.get("ts"),
+            "supersedes": rec.get("supersedes"),
+            "paper_count": len(rec.get("paper_ids") or []),
+        },
+    )
+    return {}
