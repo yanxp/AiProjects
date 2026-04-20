@@ -21,6 +21,15 @@ class Settings(BaseSettings):
     # 用 Optional[str] 而不是 `str | None`，以兼容 Python 3.9（PEP 604 union 在 3.10+ 才支持）。
     LLM_SMALL_MODEL: Optional[str] = None
 
+    # 是否在 Planner/Reader/Reflector 这些节点上启用 OpenAI 的
+    # `response_format={"type":"json_object"}` 强制 JSON 输出。
+    # 默认 False，因为：
+    # - OpenAI / DeepSeek 支持得很好 → 可以手动开 true 提升 JSON 稳定性；
+    # - 火山方舟 Ark（豆包）部分 endpoint 不认这个参数，会回 5xx / 假 `ModelLoading`；
+    # - vLLM / SGLang 自托管按版本参差，开了会踩兼容坑。
+    # 关掉时依赖 lenient JSON 解析（从 ```json``` 块 / 首个 {} 段中抓），实测够用。
+    LLM_JSON_MODE: bool = False
+
     # Agent 控制参数 ----------------------------------------------
     AGENT_MAX_STEPS: int = 4   # 最大循环步数，防止死循环
     AGENT_TOP_K: int = 8       # 每次检索保留多少篇
