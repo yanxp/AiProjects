@@ -179,7 +179,10 @@ def _print_references() -> None:
     for i, pid in enumerate(_papers_order, 1):
         p = _papers_seen[pid]
         authors = ", ".join(p.authors[:3]) + (" et al." if len(p.authors) > 3 else "")
-        line1 = f"  [{i}] {p.title}"
+        # 本地 RAG 片段和 OpenAlex 论文区分开：References 行同样加 [Local] 前缀，
+        # 和 Retriever 分区保持一致（title 字段不再自带 [Local]）。
+        tag = "[Local] " if p.source == "local" else ""
+        line1 = f"  [{i}] {tag}{p.title}"
         line2 = _dim(f"      {authors} · {p.year or '?'} · {p.venue or ''}")
         print(line1)
         print(line2)
