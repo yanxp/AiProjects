@@ -45,6 +45,27 @@ scripts/        开发脚本
 docker-compose.yml
 ```
 
+## 本地 RAG（可选，最小版）
+
+在 OpenAlex 旁边加一条"本地文档检索"支路，让 Agent 同时能搜你自己的笔记 / PDF / markdown：
+
+```bash
+# 1. 把文档丢进 docs/ （支持 md / txt，加 --pdf 也能吃 PDF）
+mkdir docs && cp ~/notes/*.md docs/
+
+# 2. 建索引（写出 rag_index.pkl）
+python scripts/build_index.py ./docs
+
+# 3. 打开 RAG（或写进 .env）
+export RAG_ENABLED=true
+export LLM_EMBED_MODEL=text-embedding-3-small   # 或 Ark 的 ep-xxx
+
+# 4. 跑 demo；Retriever 会把本地片段和 OpenAlex 结果混进同一个候选池
+python demo.py "..."
+```
+
+实现细节：`pickle + numpy` 点积余弦，无额外服务和依赖。建索引时片段被 L2 归一化，运行时 query 编码后直接 `vectors @ qv` 取 top-k。见 [`apps/api/app/retrieval/local_rag.py`](apps/api/app/retrieval/local_rag.py) 和 [`scripts/build_index.py`](scripts/build_index.py)。
+
 ## 下一步扩展
 - 接入 Semantic Scholar / arXiv / Unpaywall
 - 加入 Qdrant + bge-m3 做语义检索与 Rerank

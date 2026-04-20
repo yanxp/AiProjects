@@ -16,7 +16,7 @@ import json
 from collections.abc import Callable
 
 from ..config import get_settings
-from ..retrieval import openalex
+from ..retrieval import local_rag, openalex
 from ..schemas import Evidence, Paper
 from .. import llm
 from .prompts import (
@@ -100,11 +100,15 @@ async def retriever_node(state: AgentState, emit: Emitter) -> dict:
     # MVP 简化：直接拿 sub_queries 最后 N=5 条（反思补充的 query 会追加进来）。
     queries = state.get("sub_queries", [])[-5:]
 
-    # 并发调 OpenAlex，避免串行等待
-    results_per_q = await asyncio.gather(
-        *[openalex.search(q, top_k=10) for q in queries],
-        return_exceptions=True,
-    )
+    # 并发调 OpenAlex + 可选的本地 RAG。
+    # 本地 RAG 只对"原始用户 query"搜一次（片段是你自己的文档，不需要多 query 展开）。
+    tasks: list = [openalex.search(q, top_k=10) for q in queries]
+    rag_task_idx = -1
+    if s.RAG_ENABLED and local_rag.is_available():
+        rag_task_idx = len(tasks)
+        tasks.append(local_rag.search(state["query"], top_k=s.RAG_TOP_K))
+
+    results_per_q = await asyncio.gather(*tasks, return_exceptions=True)
 
     # 合并 + 去重：以 paper.id（优先 DOI）作为唯一键
     seen: dict[str, Paper] = {}
@@ -112,7 +116,9 @@ async def retriever_node(state: AgentState, emit: Emitter) -> dict:
     for p in state.get("candidates", []):
         seen[p.id] = p
     new_papers: list[Paper] = []
-    for res in results_per_q:
+    # 拆分 OpenAlex 结果和本地 RAG 结果
+    openalex_results = results_per_q[: rag_task_idx] if rag_task_idx >= 0 else results_per_q
+    for res in openalex_results:
         if isinstance(res, Exception):
             continue
         for p in res:
@@ -120,8 +126,39 @@ async def retriever_node(state: AgentState, emit: Emitter) -> dict:
                 seen[p.id] = p
                 new_papers.append(p)
 
-    # 粗排：引用数降序；没有引用数的排最后
-    new_papers.sort(key=lambda p: (p.citations or 0), reverse=True)
+    # 本地片段包装成 Paper，混进同一个候选池，复用后续 Reader/Reflector/Synthesizer
+    if rag_task_idx >= 0:
+        rag_res = results_per_q[rag_task_idx]
+        if not isinstance(rag_res, Exception):
+            for h in rag_res:
+                source = h.get("source", "local")
+                snippet = h.get("snippet", "")
+                # 用 source + 内容哈希保证同一片段只进一次
+                pid = f"local::{source}::{abs(hash(snippet)) & 0xffffffff:x}"
+                if pid in seen:
+                    continue
+                p = Paper(
+                    id=pid,
+                    title=f"[Local] {source}",
+                    abstract=snippet,       # Reader 只看 abstract，直接当摘要喂
+                    authors=[],
+                    year=None,
+                    venue=None,
+                    citations=None,         # 本地片段无引用数，留 None；粗排时会排后面
+                    url=f"file://{source}",
+                    pdf_url=None,
+                    source="local",
+                )
+                seen[pid] = p
+                new_papers.append(p)
+
+    # 粗排：本地 RAG 片段永远排最前（你自己的文档最相关），OpenAlex 论文按引用数降序。
+    # 这样 top_k 截断时不会把本地片段切掉 —— 它才是用户开 RAG 的目的。
+    def _sort_key(p: Paper) -> tuple[int, int]:
+        is_local = 1 if p.source == "local" else 0
+        return (is_local, p.citations or 0)
+
+    new_papers.sort(key=_sort_key, reverse=True)
     new_papers = new_papers[: s.AGENT_TOP_K]
 
     emit(

@@ -128,6 +128,27 @@ async def chat(
     return resp.choices[0].message.content or ""
 
 
+async def embed(texts: list[str], model: str | None = None) -> list[list[float]]:
+    """
+    批量嵌入。用于本地 RAG 的离线建库 / 运行时 query 编码。
+
+    - 单次最大条数由 provider 控制（OpenAI 2048，DeepSeek 不支持 embeddings，
+      豆包/Ark 建议 ≤100），调用方自行分批；这里只做最小封装。
+    - 返回 list[list[float]]，与 input 顺序一一对应。
+    - 使用和 chat 同一份退避重试，冷启动/瞬态错误下也能撑住。
+    """
+    s = get_settings()
+
+    async def _call():
+        resp = await _client().embeddings.create(
+            model=model or s.LLM_EMBED_MODEL,
+            input=texts,
+        )
+        return [d.embedding for d in resp.data]
+
+    return await _with_retry(_call, label="embed")
+
+
 async def stream_chat(
     messages: list[dict],
     model: str | None = None,
