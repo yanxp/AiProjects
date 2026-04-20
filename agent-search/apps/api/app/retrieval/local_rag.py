@@ -52,6 +52,15 @@ def _load_index() -> Optional[dict]:
     # 简单校验：必须含这三个字段
     if not isinstance(idx, dict) or not all(k in idx for k in ("chunks", "sources", "vectors")):
         return None
+
+    # 兜底清洗：旧索引里可能混入 NaN/Inf（空白片段 / 异常嵌入响应），
+    # matmul 在 Apple Silicon 的 Accelerate BLAS 下会连发 divide-by-zero / overflow /
+    # invalid-value RuntimeWarning，虽然结果能用但很脏。这里一次性清掉。
+    vecs = idx["vectors"]
+    if isinstance(vecs, np.ndarray) and not np.isfinite(vecs).all():
+        idx["vectors"] = np.nan_to_num(vecs, nan=0.0, posinf=0.0, neginf=0.0).astype(
+            "float32", copy=False
+        )
     return idx
 
 
@@ -80,9 +89,15 @@ async def search(query: str, top_k: int = 5) -> list[dict]:
     # 编码 query（API / 本地 sentence-transformers 由 EMBED_BACKEND 决定）
     vectors_q = await embeddings.embed([query])
     qv = np.asarray(vectors_q[0], dtype="float32")
+    # query 向量异常（嵌入服务偶尔返 NaN / 空串等）直接降级
+    if qv.size == 0 or not np.isfinite(qv).all():
+        return []
     qv = _l2_normalize(qv)
 
-    mat: np.ndarray = idx["vectors"]  # 已经在建库阶段归一化了
+    mat: np.ndarray = idx["vectors"]  # 已经在建库阶段归一化 + _load_index 兜底清洗
+    if mat.shape[1] != qv.shape[0]:
+        # 嵌入维度和索引维度对不上（比如换了后端但没重建）：静默降级
+        return []
     # 余弦相似度 = 归一化向量的点积
     scores = mat @ qv
 

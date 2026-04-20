@@ -104,6 +104,27 @@ def emit(event_type: str, payload: dict) -> None:
         for i, q in enumerate(payload.get("sub_queries", []), 1):
             print(f"  {i}. {q}")
 
+    elif event_type == "rag":
+        # 单独列一块"本地 RAG"，和 OpenAlex 结果区分开
+        _header("RAG — 本地文档检索", C.CYAN)
+        if not payload.get("available", False):
+            print(_dim("  索引不可用（没建 / 路径不对 / pickle 坏）"))
+            return
+        err = payload.get("error")
+        if err:
+            print(f"{C.RED}  error:{C.RESET} {err}")
+            return
+        hits = payload.get("hits", [])
+        if not hits:
+            print(_dim("  （本地没检索到相关片段）"))
+            return
+        for i, h in enumerate(hits, 1):
+            score = h.get("score", 0.0)
+            src = h.get("source", "")
+            preview = (h.get("preview", "") or "").replace("\n", " ")
+            print(f"  {i}. score={score:.3f}  {_dim(src)}")
+            print(f"     {preview}")
+
     elif event_type == "retrieve":
         _header("Retriever — OpenAlex 检索结果", C.MAGENTA)
         qs = payload.get("queries", [])
@@ -115,7 +136,8 @@ def emit(event_type: str, payload: dict) -> None:
             cite = p.citations if p.citations is not None else "?"
             year = p.year or "?"
             title = (p.title or "")[:100]
-            print(f"  - [{year}] ({cite} cites) {title}")
+            tag = "[Local] " if p.source == "local" else ""
+            print(f"  - {tag}[{year}] ({cite} cites) {title}")
 
     elif event_type == "read":
         _header("Reader — 抽取证据", C.YELLOW)

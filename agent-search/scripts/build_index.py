@@ -103,6 +103,12 @@ async def _embed_all(chunks: list[str], batch: int = 64) -> np.ndarray:
         vs = await embeddings.embed(part)
         vectors.extend(vs)
     arr = np.asarray(vectors, dtype="float32")
+    # 清洗：有些 provider 偶尔会返 NaN / Inf（空串、极短文本、内部抖动），
+    # 留着不处理到运行时 matmul 会报 RuntimeWarning。一次性替换成 0。
+    if not np.isfinite(arr).all():
+        n_bad = int((~np.isfinite(arr)).any(axis=1).sum())
+        print(f"[warn] {n_bad}/{total} 条向量含 NaN/Inf，已替换为 0", file=sys.stderr)
+        arr = np.nan_to_num(arr, nan=0.0, posinf=0.0, neginf=0.0)
     # L2 归一化，运行时可直接点积 = 余弦相似度
     norms = np.linalg.norm(arr, axis=1, keepdims=True)
     norms[norms == 0] = 1.0  # 避免除零
