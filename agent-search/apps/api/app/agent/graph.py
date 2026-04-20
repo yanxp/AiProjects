@@ -38,12 +38,31 @@ def build_graph(emit: Callable[[str, dict], None]):
     """
     g = StateGraph(AgentState)
 
-    # 注册节点：每个节点都是 async def，LangGraph 会自动识别
-    g.add_node("planner", lambda s: planner_node(s, emit))
-    g.add_node("retriever", lambda s: retriever_node(s, emit))
-    g.add_node("reader", lambda s: reader_node(s, emit))
-    g.add_node("reflector", lambda s: reflector_node(s, emit))
-    g.add_node("synthesizer", lambda s: synthesizer_node(s, emit))
+    # 注册节点。注意：LangGraph 通过 inspect 判断节点是同步还是 async。
+    # 若用同步 lambda 包 async 函数（`lambda s: planner_node(s, emit)`），
+    # LangGraph 只会把 lambda 的返回值当作 dict —— 但实际拿到的是 coroutine，
+    # 随即抛 InvalidUpdateError: Expected dict, got <coroutine object ...>。
+    # 所以这里显式用 async 闭包把 emit 绑上去，保持每个节点依然是 async def。
+    async def _planner(s: AgentState) -> dict:
+        return await planner_node(s, emit)
+
+    async def _retriever(s: AgentState) -> dict:
+        return await retriever_node(s, emit)
+
+    async def _reader(s: AgentState) -> dict:
+        return await reader_node(s, emit)
+
+    async def _reflector(s: AgentState) -> dict:
+        return await reflector_node(s, emit)
+
+    async def _synthesizer(s: AgentState) -> dict:
+        return await synthesizer_node(s, emit)
+
+    g.add_node("planner", _planner)
+    g.add_node("retriever", _retriever)
+    g.add_node("reader", _reader)
+    g.add_node("reflector", _reflector)
+    g.add_node("synthesizer", _synthesizer)
 
     # 线性边
     g.add_edge(START, "planner")
