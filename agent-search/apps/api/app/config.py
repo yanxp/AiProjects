@@ -21,6 +21,17 @@ class Settings(BaseSettings):
     # 用 Optional[str] 而不是 `str | None`，以兼容 Python 3.9（PEP 604 union 在 3.10+ 才支持）。
     LLM_SMALL_MODEL: Optional[str] = None
 
+    # 嵌入模型（用于本地 RAG 建库 + 运行时 query 编码）。
+    # OpenAI: text-embedding-3-small / text-embedding-3-large
+    # 豆包/Ark: 创建 embedding 类型的 endpoint，填 ep-xxx
+    # 自托管：vLLM/TEI 启动 bge-m3 之类
+    LLM_EMBED_MODEL: str = "text-embedding-3-small"
+
+    # 本地 RAG ----------------------------------------------------
+    RAG_ENABLED: bool = False             # 默认关，开后 Retriever 会并发查本地 pickle 索引
+    RAG_INDEX_PATH: str = "rag_index.pkl" # 相对 demo.py 所在目录；build_index.py 也写到这里
+    RAG_TOP_K: int = 5                    # 每次注入多少条本地片段到候选池
+
     # 是否在 Planner/Reader/Reflector 这些节点上启用 OpenAI 的
     # `response_format={"type":"json_object"}` 强制 JSON 输出。
     # 默认 False，因为：
