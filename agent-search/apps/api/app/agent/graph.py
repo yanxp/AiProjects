@@ -53,11 +53,20 @@ def build_graph(emit: Callable[[str, dict], None]):
 
     # 条件边：反思后要么回到 retriever，要么进入 synthesizer
     def route_after_reflect(state: AgentState) -> str:
+        """
+        唯一真相来源是 `sufficient`（reflector_node 写入）。
+        早期版本错误地用 `missing` 非空作为回跳条件，遇到 LLM 返回
+        {"sufficient": true, "missing": [...]} 这类自相矛盾的输出时，
+        router 会回跳但 reflector 未注入新 sub_queries，导致 retriever
+        用相同 query 反复检索、候选全部被去重、证据被 operator.add 累加，
+        直到 step 撞上 AGENT_MAX_STEPS 才退出 —— 纯属浪费 token。
+        现在 router 只看 sufficient，reflector 在"足够"时也会清空 missing。
+        """
         s = get_settings()
-        missing = state.get("missing") or []
+        # 缺省 True：若 reflector 从未运行或解析失败，按"足够"处理，直接出答案
+        sufficient = state.get("sufficient", True)
         step = state.get("step", 0)
-        # reflector 把新的缺失点写进 sub_queries 时，说明想再搜一轮
-        if missing and step < s.AGENT_MAX_STEPS and s.AGENT_REFLECT:
+        if not sufficient and step < s.AGENT_MAX_STEPS and s.AGENT_REFLECT:
             return "retriever"
         return "synthesizer"
 

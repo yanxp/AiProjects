@@ -28,8 +28,14 @@ class AgentState(TypedDict, total=False):
     # Reader 抽出的证据（累加）
     notes: Annotated[list[Evidence], operator.add]
 
-    # Reflector 认为还缺的信息（每次覆盖）
+    # Reflector 认为还缺的信息（每次覆盖，仅用于展示 / 日志）
     missing: list[str]
+
+    # Reflector 的显式判定：证据是否充足。
+    # Router 据此决定是再搜一轮还是进入 Synthesizer，
+    # 让"是否足够"这件事有唯一可信来源，避免 router 和 reflector 用不同条件而产生
+    # 死循环（例如 LLM 返回 {"sufficient": true, "missing": [...]} 这种内部矛盾）。
+    sufficient: bool
 
     # 当前循环步数，用于触发终止条件
     step: int
