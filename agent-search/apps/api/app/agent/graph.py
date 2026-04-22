@@ -22,6 +22,8 @@ from langgraph.graph import END, START, StateGraph
 
 from ..config import get_settings
 from .nodes import (
+    memory_recall_node,
+    memory_write_node,
     planner_node,
     reader_node,
     reflector_node,
@@ -43,6 +45,9 @@ def build_graph(emit: Callable[[str, dict], None]):
     # LangGraph 只会把 lambda 的返回值当作 dict —— 但实际拿到的是 coroutine，
     # 随即抛 InvalidUpdateError: Expected dict, got <coroutine object ...>。
     # 所以这里显式用 async 闭包把 emit 绑上去，保持每个节点依然是 async def。
+    async def _memory_recall(s: AgentState) -> dict:
+        return await memory_recall_node(s, emit)
+
     async def _planner(s: AgentState) -> dict:
         return await planner_node(s, emit)
 
@@ -58,14 +63,21 @@ def build_graph(emit: Callable[[str, dict], None]):
     async def _synthesizer(s: AgentState) -> dict:
         return await synthesizer_node(s, emit)
 
+    async def _memory_write(s: AgentState) -> dict:
+        return await memory_write_node(s, emit)
+
+    g.add_node("memory_recall", _memory_recall)
     g.add_node("planner", _planner)
     g.add_node("retriever", _retriever)
     g.add_node("reader", _reader)
     g.add_node("reflector", _reflector)
     g.add_node("synthesizer", _synthesizer)
+    g.add_node("memory_write", _memory_write)
 
-    # 线性边
-    g.add_edge(START, "planner")
+    # 线性边：memory_recall 在 planner 前面跑一次，为 Synthesizer 提供历史上下文。
+    # MEMORY_MODE=off 时节点直接 no-op，没额外开销，所以不做条件边（保持图结构简单）。
+    g.add_edge(START, "memory_recall")
+    g.add_edge("memory_recall", "planner")
     g.add_edge("planner", "retriever")
     g.add_edge("retriever", "reader")
     g.add_edge("reader", "reflector")
@@ -94,17 +106,29 @@ def build_graph(emit: Callable[[str, dict], None]):
         route_after_reflect,
         {"retriever": "retriever", "synthesizer": "synthesizer"},
     )
-    g.add_edge("synthesizer", END)
+    # Synthesizer 流完 → 写一条记忆 → END。memory_write 内部按 MEMORY_MODE 自己决定
+    # 是否真的写盘，和 memory_recall 对称，保持图结构不变。
+    g.add_edge("synthesizer", "memory_write")
+    g.add_edge("memory_write", END)
 
     return g.compile()
 
 
-async def run_agent(query: str, emit: Callable[[str, dict], None]) -> AgentState:
+async def run_agent(
+    query: str,
+    emit: Callable[[str, dict], None],
+    *,
+    memory_refresh: bool = False,
+) -> AgentState:
     """
     运行一次 agent。
     - emit 由上层（API 路由）提供，用于往 SSE 通道推事件。
+    - memory_refresh=True 表示本次跳过记忆召回（但仍会写回），
+      对应 CLI 的 --memory-refresh 标志。
     - 返回最终 state（含 answer、notes、candidates），上层决定如何发 "done" 事件。
     """
     graph = build_graph(emit)
-    final_state: AgentState = await graph.ainvoke({"query": query, "step": 0})
+    final_state: AgentState = await graph.ainvoke(
+        {"query": query, "step": 0, "memory_refresh": memory_refresh}
+    )
     return final_state

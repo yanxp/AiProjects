@@ -42,3 +42,12 @@ class AgentState(TypedDict, total=False):
 
     # 最终答案（Synthesizer 流式写入后，在 done 时落到这里）
     answer: str
+
+    # Memory recall 产出（memory.Episode 的 dict 形式，score 降序）。
+    # Synthesizer 把它作为"相关历史问答"上下文注入 prompt。
+    memory_hits: list[dict]
+
+    # 用户显式请求强刷新（--memory-refresh）。memory_recall_node 读到后
+    # 直接跳过 recall（memory_hits 保持空）；memory_write_node 仍会写本轮，
+    # 按 MEMORY_UPDATE_POLICY 触发 supersede。用来绕开"查过的就当历史"。
+    memory_refresh: bool

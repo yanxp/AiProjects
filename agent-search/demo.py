@@ -56,6 +56,7 @@ except Exception:
 
 from app.agent.graph import run_agent  # noqa: E402  # 上面动态加了 sys.path
 from app.schemas import Paper  # noqa: E402
+from datetime import datetime  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -97,9 +98,51 @@ def _register_paper(p: Paper) -> None:
         _papers_order.append(p.id)
 
 
+def _ts_fmt(ts) -> str:
+    """Unix 秒 → 本地时间 'YYYY-MM-DD HH:MM'；拿不到就返 '?'"""
+    try:
+        return datetime.fromtimestamp(float(ts)).strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        return "?"
+
+
 def emit(event_type: str, payload: dict) -> None:
     """CLI 版的 emitter：把 agent 内部事件打到终端。"""
-    if event_type == "plan":
+    if event_type == "memory_hit":
+        _header("Memory — 相关历史问答", C.CYAN)
+        if payload.get("refreshed"):
+            print(_dim("  --memory-refresh: 本次跳过历史召回"))
+            return
+        err = payload.get("error")
+        if err:
+            print(f"{C.RED}  error:{C.RESET} {err}")
+            return
+        hits = payload.get("hits", [])
+        if not hits:
+            print(_dim("  （没有语义上相近的历史 Q/A）"))
+            return
+        for i, h in enumerate(hits, 1):
+            score = h.get("score", 0.0)
+            ts = _ts_fmt(h.get("ts"))
+            q = (h.get("query") or "").strip()
+            preview = (h.get("answer_preview") or "").replace("\n", " ")
+            print(f"  {i}. score={score:.3f}  {_dim(ts)}")
+            print(f"     Q: {q}")
+            print(f"     A: {preview}")
+
+    elif event_type == "memory_write":
+        _header("Memory — 写入新记忆", C.CYAN)
+        if not payload.get("written"):
+            reason = payload.get("reason") or payload.get("error") or "skipped"
+            print(_dim(f"  未写入（{reason}）"))
+            return
+        mid = payload.get("id") or "?"
+        sup = payload.get("supersedes")
+        pc = payload.get("paper_count", 0)
+        tail = f" supersedes={sup}" if sup else " (new)"
+        print(f"  id={mid}{tail}  refs={pc}")
+
+    elif event_type == "plan":
         _header("Planner — 拆分为学术检索词")
         for i, q in enumerate(payload.get("sub_queries", []), 1):
             print(f"  {i}. {q}")
@@ -190,8 +233,8 @@ def _print_references() -> None:
 # ---------------------------------------------------------------------------
 # 主入口：解析参数 → 跑 agent → 打印引用。
 # ---------------------------------------------------------------------------
-async def _run(query: str) -> None:
-    # 必要环境检查：没配 LLM_API_KEY 时提前报错，比到调用时才 401 更友好。
+async def _run(query: str, memory_refresh: bool = False) -> None:
+    # 必要环境检查：没配 LLM_API_KEY 时提前报错,比到调用时才 401 更友好。
     key = os.getenv("LLM_API_KEY", "")
     if not key or "placeholder" in key or key.endswith("your-key"):
         print(
@@ -201,7 +244,7 @@ async def _run(query: str) -> None:
 
     print(f"{C.BOLD}Query:{C.RESET} {query}")
     try:
-        final_state = await run_agent(query, emit)
+        final_state = await run_agent(query, emit, memory_refresh=memory_refresh)
     except Exception as e:
         # agent 里任何未捕获异常都在这里兜底，打印清晰的错误信息
         print(f"\n{C.RED}Agent 运行失败：{type(e).__name__}: {e}{C.RESET}")
@@ -224,27 +267,44 @@ async def _run(query: str) -> None:
 def main() -> None:
     # 命令行用法：
     #   python demo.py "your query"
-    #   python demo.py              ← 进入交互模式
-    if len(sys.argv) > 1:
-        query = " ".join(sys.argv[1:]).strip()
-        asyncio.run(_run(query))
+    #   python demo.py --memory-refresh "your query"     # 强制刷新记忆
+    #   python demo.py                                   # 交互模式
+    # 交互模式下输入 "!refresh <query>" 相当于加了 --memory-refresh
+    args = sys.argv[1:]
+    one_shot_refresh = False
+    if args and args[0] == "--memory-refresh":
+        one_shot_refresh = True
+        args = args[1:]
+
+    if args:
+        query = " ".join(args).strip()
+        asyncio.run(_run(query, memory_refresh=one_shot_refresh))
         return
 
-    print("进入交互模式，输入空行或 Ctrl-D 退出。")
+    print(
+        "进入交互模式，输入空行或 Ctrl-D 退出。"
+        "\n（在问题前加 '!refresh ' 会强制刷新记忆）"
+    )
     while True:
         try:
-            q = input(f"\n{C.BOLD}?> {C.RESET}").strip()
+            raw = input(f"\n{C.BOLD}?> {C.RESET}").strip()
         except (EOFError, KeyboardInterrupt):
             print()
             break
-        if not q:
+        if not raw:
             break
+        refresh = False
+        if raw.startswith("!refresh "):
+            refresh = True
+            raw = raw[len("!refresh ") :].strip()
+            if not raw:
+                continue
         # 每次提问都清空引用状态，避免跨问题串号
         _papers_seen.clear()
         _papers_order.clear()
         if hasattr(emit, "_answer_started"):
             delattr(emit, "_answer_started")
-        asyncio.run(_run(q))
+        asyncio.run(_run(raw, memory_refresh=refresh))
 
 
 if __name__ == "__main__":
